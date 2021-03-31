@@ -1,0 +1,535 @@
+---
+title: "Network_analyses_working_group"
+author: "Jmunoz"
+date: "31/03/2021"
+output: html_document
+---
+
+
+####################################################################
+####################################################################
+##  Network analyses
+## CIEE Working group
+## Explorartory analyses for subtidal and intertidal data
+## R-code Adapted from SNA workshop (Farine 2020)
+#### last updated: March 15th 2021
+####################################################################
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+**Background from Davie et al**
+
+At its simplest, a social network represents a set of individual entities, represented as ‘nodes’, and the connections between them, represented as ‘edges’ (Wasserman & Faust, 1994). The aim of social
+network analysis is to *quantify the extent or strength of relationships between individuals and explore the group- or population-levelstructure that emerges*. Relationships can be defined based on particular interactions, such as grooming or dominance, or from associations defined by spatial proximity (see Carter, Lee, & Marshall,2015; Castles et al., 2014; Farine, 2015, for a discussion on the relationship
+between these measures). Edges typically represent the rate or probability that two individuals interact or associate in time (Farine, 2015;Whitehead, 2008), with stronger relationships havinglarger edge values. The set of connections that the edges form can then be captured, or described, using different social network metrics.
+
+Metrics can be calculated at the individual level (e.g. *degree*, how many connections each individual has or how well connected it isrelative to others), or at the level of the entire network (e.g. edge density, the proportion of all possible edges that are present in the network). Individual-level and network-level metrics are influenced both by the biology of the study organism and also the definitionsused to record observations. 
+
+For example, using a large distance threshold to capture spatial associations will result in more associations per observation and, thus, a higher individual average degreeand higher network density. 
+
+Essential factors to consider when designing social network studies include the definition of an association or interaction, the method used to calculate network edgeweights, the potential for and impact of observation errors and the resolution at which the data can be collected.
+
+Interesting blog https://methodsblog.com/2019/03/26/research-gaps-in-animal-social-network-analysis/
+
+**Basic Network Terminology**
+Vertex - A vertex is simply drawn as a node or a dot.
+Edge - An edge (a set of two elements) is drawn as a line connecting two vertices, called endpoints or end vertices or end vertices. 
+Directed Edge - A directed edge is an ordered pair of nodes that can be represented graphically as an arrow drawn between the nodes.
+Undirected Edge - An undirected edge disregards any sense of direction and treats both nodes interchangeably.
+Node Degree - The degree of a node in a network is the number of connections it has to other nodes and the degree distribution is the probability distribution of these degrees over the whole network.
+Out Degree - The number of edges leaving a vertex.
+In Degree - The number of edges entering a vertex.
+Size - The size of a graph is the number of its edges.
+Weight - A weighted graph associates a label (weight) with every edge in the graph. Weights are usually real numbers. The weight of an edge is often referred to as the "cost" of the edge. In applications, the weight September be a measure of the length of a route, the capacity of a line, the energy required to move between locations along a route, etc. 
+
+**Network Overview**
+Average Degree - Average number of links per node.
+Average Weighted Degree - Average of sum of weights of the edges of nodes.
+Distance - The distance between two nodes is defined as the number of edges along the shortest path connecting them.
+Average Distance - The Average of distance between all pairs of nodes.
+Network Diameter - The maximum distance between any pair of nodes in the graph. 
+Modularity - Modularity is one measure of the structure of networks or graphs. It was designed to measure the strength of division of a network into modules (also called groups, clusters or communities). Networks with high modularity have dense connections between the nodes within modules but sparse connections between nodes in different modules.
+Connected Components - a connected component (or just component) of an undirected graph is a subgraph in which any two vertices are connected to each other by paths, and which is connected to no additional vertices in the supergraph.
+
+**Node Overview**
+Clustering Coefficient - a clustering coefficient is a measure of the degree to which nodes in a graph tend to cluster together.
+Centrality - centrality refers to indicators which identify the most important vertices within a graph. Applications include identifying the most influential person(s) in a social network, key infrastructure nodes in the Internet or urban networks, and super spreaders of disease.
+Closeness Centrality - In connected graphs there is a natural distance metric between all pairs of nodes, defined by the length of their shortest paths. The farness of a node is defined as the sum of its distances to all other nodes, and its closeness is defined as the reciprocal of the farness. Thus, the more central a node is the lower its total distance to all other nodes.
+Betweenness Centrality - Betweenness is a centrality measure of a vertex within a graph (there is also edge betweenness, which is not discussed here). Betweenness centrality quantifies the number of times a node acts as a bridge along the shortest path between two other nodes.
+Eigenvector Centrality - Eigenvector centrality is a measure of the influence of a node in a network. It assigns relative scores to all nodes in the network based on the concept that connections to high-scoring nodes contribute more to the score of the node in question than equal connections to low-scoring nodes.
+
+**Edge Overview**
+Average Path Length - Average path length is defined as the average number of steps along the shortest paths for all possible pairs of network nodes. It is a measure of the efficiency of information or mass transport on a network.
+
+**Notes on packages**
+"asnipe" provides the functionality to import various data forms into either a group by individual or
+sampling period matrix, perform randomisations, and generate the adjacency matrix from these.
+"sna" allows to Measure weighted and binary degrees among other network metrics, detach after use in order to prevent issues with igraph  because they both having the same function names.
+
+
+```
+install.packages("asnipe")
+install.packages("assortnet")
+install.packages("sna")
+install.packages("igraph")
+install.packages("vegan")
+install.packages("network")
+install.packages("ndtv") #helpful to create dynamic plots, and dynamic networks
+
+
+library(asnipe)
+library(assortnet)
+library(sna)
+library(igraph)
+library(vegan)
+library(network)
+library(ndtv) #helpful to create dynamic plots, and dynamic networks
+
+```
+
+**Reading the data**
+#Note: in the attributes file species name is set as the first column,and remember to keep the order of the rows in this data set identical 
+#to the row and column ordering of the adjacency matrix in order to facilitate comparison and inclusion of network traits.
+
+#"inds" are specific attributes to the individuals for example in the case we have marked individuals
+#"attributes"  are attributes specific to the species for example traits, dispersal, age, size, or any otehr traits of interest
+#"matrix" there are two tipical types of matrices the ""group by individual matrix or "the sampling periods matrix".
+
+```
+attributes <- read.csv("..../attributes.csv", header=TRUE,row.names=FALSE)
+network <- as.matrix(read.csv("..../network.csv", header=FALSE,row.names=0, stringsAsFactors=FALSE))
+
+my_network[1,] ##check that the first row and the first column actually contain data rather than column names or row names. 
+head(my_attributes)
+
+str(inds)
+str(attributes)
+
+```
+
+#If we are creating the network from our observation data set we should have two files
+data("group_by_individual") # gbi a group by individual matrix (347 groups with 151 individuals),
+data("individuals") #information/attributes for each individual (ring number, species and sex for each of 
+
+Using the group by individual matrix or a sampling period matrix and the package "asnipe" we create the network os species associations.
+Check the options for different formats, association indices, and subsetting options in the help file, the fuction get_network() is using the SRI (Simple ration Index that is already accounting for opportunity)
+
+```
+network <- get_network(association_data=gbi,data_format = "GBI")
+```
+## Calculate network measurements
+Degree: is an interesting metric, you can do it binary or not (see glosary notes )
+Degree can or not be binary.
+```
+Manually measure weighted degree
+deg <- rowSums(network)
+
+#or Use library (sna) to extract measurements(remember to detach afterwards)
+#detach("package:igraph") #detach igraph first to to avoid conflicts
+
+#library(sna)
+deg <- degree(network, gmode="graph")
+deg_binary <- degree(network, gmode="graph",ignore.eval=TRUE)
+#detach("package:sna")
+```
+
+You can add degrees to the attributes data to test Hypotheses
+```
+#Add degrees to attributes data 
+inds$DEGREE <- deg
+inds$DEGREE_BINARY <- deg_binary
+View (inds)
+```
+
+*ASSORTATIVITY*: association between individuals is assorted by species. Preference for association with individuals than have the same characteristics that you have (assorted), or you prefer to associate with individuals diffrenet to you -1 dissasorted
+
+Plotting the network and attributes
+
+```
+detach("package:sna")
+library(igraph)
+
+#Basic plots
+net<-graph.adjacency(network, mode="undirected", weighted=TRUE, diag=FALSE)
+net<-graph.adjacency(network, mode="directed", weighted=TRUE, diag=FALSE)
+
+plot (net)
+
+```
+For our data We could create the network bases on associtaions or interactions, but we dont really have interactions collected consistently.
+One approach frequently used to estimate associations is the "gambit of the group", all individuals within a group of animals observed in a point and time as being associated. Thus association rates represent the propensity for each pair of individuals to co-ocurr in the same group. The fundamental **assumption** of the gambit of the group are that all, or almost all, interactions of some kind take
+place within groups and that interactions of this type occur at a similar rate among all animals when they formgroups (Whitehead & Dufault 1999; Farine et al. 2015, or  that the group itself is meaningful to the animals. This method is particularly useful when groups of animals can be easily observed, and group membership changes overtime or space.
+
+Notes on the datasets: Our data set, in this case I will use only the count data from the subtidal KEEN, and each independet observation will be transect by year, that way we will have around 42 independent detection events.
+I created a  presence absence matrix _Site_year per species_code; only for groups that have a count data set. For the presence absence we can use the data sets keen_fish.	keen_quads.	keen_swath, and keen_cover (but need to transform the species column into presneces), in theory we could also use keen kelp data and percentage cover if we summarise the number of individuals detected 
+For the abundance matrix we can use use only data sets with counts (keen_fish.	keen_quads.	keen_swath)
+The Keen_kelp data does not need to be use for the counts (PRESENCE/ABSENCE), because kelp was counted in the cover?
+
+##Our data set##
+
+```
+install.packages("asnipe")
+install.packages("assortnet")
+install.packages("sna")
+install.packages("igraph")
+install.packages("vegan")
+install.packages("network")
+install.packages("ndtv") #helpful to create dynamic plots, and dynamic networks
+install.packages("tidyverse")
+
+
+library(asnipe)
+library(assortnet)
+library(sna)
+library(igraph)
+library(vegan)
+library(network)
+library(ndtv) #helpful to create dynamic plots, and dynamic networks
+library(tidyverse)
+
+###Asumptions: Each census is an event and assume that species co-ocurring in a place in that given time are interacting. 
+
+#Get data on appropiate format
+
+#KEEN subtidal dataset
+
+#Create presence/Absence matrix for all the species detected in the subtidal in count dataset
+#str(keen_all_counts_merged)
+##matrix<-dcast(keen_all_counts_merged, YEAR+TRANSECT+SAMPLING_METHOD~SPECIES)
+#keen_all_counts_merged<-unite (keen_all_counts_merged, "YEAR_MONTH_DAY_TRANSECT",c("YEAR","MONTH","DAY","TRANSECT"),remove=FALSE)
+#matrix<-dcast(keen_all_counts_merged, YEAR_MONTH_DAY_TRANSECT~SPECIES)
+#write.csv(matrix, "matrix_abundance_all_counts_Keen_subtidal.csv")
+#convert into a presence absence dataset, manually replace all count different from 1 to 1.
+
+#KEEN Subtidal dataset (filtered to species known to iteract any diections)
+
+
+#####Filter our matrix to species that are known to interact
+#(WARNING NEED TO DO THIS but will need to keep species taht dont interact for the analyses over time, those wil just have cero in this matrix)
+
+presence<-read.csv("keen_all_counts_merged.csv")
+interactions<-read.csv("interactions.csv")
+
+#dplyr::left_join(presence, interactions, by = "SPECIES")
+filtered_presence<-inner_join(presence, interactions, by = "SPECIES") #filter that are known to interact
+View(filtered_presence)
+filtered_presence<-unite(filtered_presence,"YEAR_MONTH_DAY_TRANSECT",c("YEAR","MONTH","DAY","TRANSECT"),remove=FALSE)
+write.csv(filtered_presence, "keen_all_counts_merged_filtered.csv")
+matrix_interactions<-dcast(filtered_presence, YEAR_MONTH_DAY_TRANSECT~SPECIES)
+write.csv(matrix_interactions, "matrix_interactions.csv")
+
+######KEEN BY YEAR
+matrix<-dcast(keen_all_counts_merged,YEAR_MONTH_DAY_TRANSECT~SPECIES)
+#write.csv(matrix,"matrix_abundance_all_counts_Keen_subtidal.csv)
+#convert into a presence absence dataset, manually replace all count different from 1 to 1.
+
+
+########
+#Networks
+########
+
+###Read data
+#Presence-absence matrix by site sbi (site by individual)
+
+matrix_subtidal<-read.csv ("matrix_abundance_allcounts_Keen_subtidal.csv") #Considering each day of sampling in a given transect as a sampling event.
+
+View(matrix_subtidal)
+
+##Check the structure of the data [check that the first row and the first column actually contain data rather than column names or row names]
+
+# the names should be unique  #note double check "‘201_8_1_Broad Cove’, ‘201_8_1_North Pepperrell’, ‘201_8_1_North Smith's Cove’" 
+
+rownames(matrix_subtidal)<-matrix_subtidal$YEAR_MONTH_DAY_TRANSECT 
+
+matrix_subtidal <- subset(matrix_subtidal, select = -c(YEAR_MONTH_DAY_TRANSECT) )
+
+#or if we need the first column for some reason make sure it  is an integer
+matrix_subtidal$YEAR_MONTH_DAY_TRANSECT<-as.integer(matrix_subtidal$YEAR_MONTH_DAY_TRANSECT)
+
+###### save as matrix
+matrix_subtidal<-as.matrix(matrix_subtidal)
+View(matrix_subtidal)
+
+#####Create network for the overall community
+#Using  "asnipe" we create the network of species associations[matrix of degrees, association strengh or co-ocurrence between species pairs] the fuction get_network() is using the SRI (Simple ration Index that is already accounting for opportunity). See help for other options
+
+network<-get_network(association_data=matrix_subtidal, data_format="GBI")
+
+#create a graph object using igraph
+net<-graph.adjacency(network, mode="undirected", weighted=TRUE, diag=FALSE)
+
+####Examine some metrics, but igraph and sna usually conflict
+detach("package:igraph")
+library(sna)
+#Degrees
+deg<- degree(network, gmode="graph")  # the sum of the weight of the edges for each node()
+deg_binary<- degree(network, gmode="graph",ignore.eval=TRUE)  #Number of conexion in each node
+#View(deg)
+detach("package:sna")
+library(igraph)
+
+#Extract the weights
+edges_values<-as_data_frame(net, what="edges")
+#Get an edge list or a matrix:
+as_edgelist(net, names=T) 
+as_adjacency_matrix(net, attr="weight")
+
+#then plot the network for the community using different layouts
+
+plot (net,layout=layout_in_circle,vertex.size=(deg_binary*0.5),vertex.label.cex=0.5,  edge.lty=c("solid"), edge.width=(edges_values$weight)*10, edge.color="#00798c", vertex.color="#edae49")
+
+plot (net,layout=layout_on_grid(net),vertex.size=(deg_binary*0.5),vertex.label.cex=0.5,  edge.lty=c("solid"), edge.width=(edges_values$weight)*10, edge.color="#00798c", vertex.color="#edae49")
+
+plot (net,layout=layout_as_star(net),vertex.size=(deg_binary*0.25),vertex.label.cex=0.5,  edge.lty=c("solid"), edge.width=(edges_values$weight)*10, edge.color="#00798c", vertex.color="#edae49")
+
+plot (net,layout=layout_nicely(net),vertex.size=(deg_binary*0.25),vertex.label.cex=0.5,  edge.lty=c("solid"), edge.width=(edges_values$weight)*5, edge.color="#00798c", vertex.color="#edae49")
+
+#######
+####Create network for species known to interact (any direction of the interaction)
+#######
+
+matrix_interactions<-read.csv("matrix_interactions.csv")
+
+View(matrix_interactions)
+
+#Drop the first column
+matrix_interactions <- subset(matrix_interactions, select=-c(YEAR_MONTH_DAY_TRANSECT))
+matrix_interactions <- subset(matrix_interactions, select=-c(X))
+
+#create network
+network1<-get_network(association_data=matrix_interactions , data_format = "GBI")
+
+
+#create a graph object using igraph
+net1<-graph.adjacency(network, mode="undirected", weighted=TRUE, diag=FALSE)
+
+
+#Extract the weights
+edges_values_interactions<-as_data_frame(net1, what="edges")
+
+#Extract the degrees
+detach("package:igraph")
+library(sna)
+deg_interactions <- degree(network1, gmode="graph")  # the sum of the weight of the edges for each node()
+deg_binary_interactions <- degree(network1, gmode="graph",ignore.eval=TRUE)  #Number of conexion in each node
+detach("package:sna")
+library(igraph)
+
+###
+#Plot
+###
+
+plot (net1,vertex.size=(deg_binary_interactions*0.3),vertex.label.cex=0.5,  edge.lty=c("solid"), edge.width=(edges_values_interactions$weight)*5, edge.color="#00798c", vertex.color="#edae49")
+
+plot (net1,layout=layout_nicely(net1),vertex.size=(deg_binary_interactions*0.25),vertex.label.cex=0.5,  edge.lty=c("solid"), edge.width=(edges_values_interactions$weight)*5, edge.color="#00798c", vertex.color="#edae49")
+
+#####
+
+#### To create dynamic networks overtime
+
+coords <- layout_with_fr(net, niter = 100000)
+
+par(mfrow=c(1, 2))
+par(oma=c(0,0,0,0))
+
+plot.igraph(net, main = "layout = Subtidal community",edge.width=(edges_values$weight)*5,vertex.label.cex=0.2,edge.color="#00798c", vertex.color="#edae49")
+
+plot.igraph(net1, main = "layout = Interacting subtidal community",edge.width=(edges_values_interactions$weight)*5, vertex.label.cex=0.2,edge.color="#00798c", vertex.color="#edae49")
+
+title("Using the Same Layout Across Multiple Graphs", outer = TRUE)
+
+#####Note
+#Need to read the asnipe documentation, I am using the get_network like if wach of the sites was a group, but the ideal is to use a site*individual matrix!, and so the "SP" for sampling period array K*N*N where K is a given observation event.
+
+###network2<-get_network(association_data=matrix_subtidal,data_format="SP", association_index="SRI", occurrences=matrix_subtidal)
+
+####
+###
+
+
+```
+
+
+#######
+#This is not working!!!!Seems to create a matrix with NAs
+#######
+
+#Create the matrix for species that interact, but keeping the other spp as part of the community to see changes on the plots
+#######
+
+matrix_interactions_unfiltered<-read.csv("matrix_interactions_unfiltered.csv")
+View(matrix_interactions_unfiltered)
+
+rownames(matrix_interactions_unfiltered)<-matrix_interactions_unfiltered$YEAR_MONTH_DAY_TRANSECT #the names should be unique  
+
+matrix_interactions_unfiltered<-subset(matrix_interactions_unfiltered,select=-c(YEAR_MONTH_DAY_TRANSECT))
+
+###### save as matrix
+matrix_interactions_unfiltered<-as.matrix(matrix_interactions_unfiltered)
+View(matrix_interactions_unfiltered)
+
+#####Create network
+#Using the sampling period matrix and the package "asnipe" we create the network of species associations[matrix of degrees, association strengh or co-ocurrence between species pairs] the fuction get_network() is using the SRI (Simple ration Index that is already accounting for opportunity). See help for other options
+
+network<-get_network(association_data=matrix_interactions_unfiltered , data_format="GBI")
+
+View (network)
+
+#create a graph object using igraph
+net<-graph.adjacency(network, mode="undirected", weighted=TRUE, diag=FALSE)
+
+###GOT FRUSTRATED HERE CAUSE I AM NOT SURE WHY IS TAKING EVERYTHING AS NA WHEN BUILDING THE MATRIX!!!!!!!!
+#######
+
+
+#Some graph parameters
+     # === vertex
+     vertex.color = rgb(0.8,0.4,0.3,0.8),          # Node color
+     vertex.frame.color = "white",                 # Node border color
+     vertex.shape="circle",                        # One of “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+     vertex.size=14,                               # Size of the node (default is 15)
+     vertex.size2=NA,                              # The second size of the node (e.g. for a rectangle)
+     
+     # === vertex label
+     vertex.label=LETTERS[1:10],                   # Character vector used to label the nodes
+     vertex.label.color="white",
+     vertex.label.family="Times",                  # Font family of the label (e.g.“Times”, “Helvetica”)
+     vertex.label.font=2,                          # Font: 1 plain, 2 bold, 3, italic, 4 bold italic, 5 symbol
+     vertex.label.cex=1,                           # Font size (multiplication factor, device-dependent)
+     vertex.label.dist=0,                          # Distance between the label and the vertex
+     vertex.label.degree=0 ,                       # The position of the label in relation to the vertex (use pi)
+     
+     # === Edge
+     edge.color="white",                           # Edge color
+     edge.width=4,                                 # Edge width, defaults to 1
+     edge.arrow.size=1,                            # Arrow size, defaults to 1
+     edge.arrow.width=1,                           # Arrow width, defaults to 1
+     edge.lty="solid",                             # Line type, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
+     edge.curved=0.3    ,                          # Edge curvature, range 0-1 (FALSE sets it to 0, TRUE to 0.5)
+)
+
+#Things to do 
+# In the cover data set create an age column to separate column size with include both size and age (By Jarret recommendation is important to keep it together)
+# In the fish data, I am not sure how are variables SIZE and SIZE.FISH different
+#create a file of species code and species names maybe in the readme as a table, (Amelia is working on this)
+
+
+#Toy dataset from asnipe
+```
+library(asnipe)
+
+data("group_by_individual") # a group by individual matrix (347 groups with 151 individuals),
+data("individuals") #information/attributes for each individual (ring number, species and sex for each of 151 individuals)
+data("times") #one-dimensional matrix containing the time of observation for each group.
+
+View(group_by_individual)
+str(times)
+str(inds)
+str(gbi) #group by individual observations
+
+View(gbi)
+View(inds)
+View(times)
+
+#Note: these variables all have the same ordering, where the rows of inds correspond to the columns of gbi, and the elements in times to the rows of gbi. The
+#The data consists of 151 individuals that were identifed in 347 groups.
+
+#First, we will fix the column names in the group by individual matrix with the ring number, which can be done with a direct assignment:
+colnames(gbi) <- inds$RING.NUMBER
+
+#Create the network of "associtaion" between individuals
+
+network <- get_network(association_data=gbi,data_format = "GBI")
+View (network)
+
+#Plot the network 
+
+net<-graph.adjacency(network, mode="undirected", weighted=TRUE, diag=FALSE)
+net<-graph.adjacency(network, mode="directed", weighted=TRUE, diag=FALSE)
+
+par(mfrow=c(1,1))
+plot (net)
+
+#####
+# Estimate network measurements
+####
+
+# Manually measure weighted degree
+deg <- rowSums(network)
+
+detach("package:igraph")
+library(sna)
+
+deg <- degree(network, gmode="graph")
+deg_binary <- degree(network, gmode="graph",ignore.eval=TRUE)
+
+detach("package:sna")
+
+#Add degrees to attributes data 
+
+inds$DEGREE <- deg
+inds$DEGREE_BINARY <- deg_binary
+
+View (inds)
+
+#Plot the difference in degrees by sex (or anyother category), and their relationship on a 3 panel plot:
+# fix empty sexes by by setting them to NA
+inds$SEX[inds$SEX == ""] <- NA
+#detach("package:sna")
+
+#drop empty factors (to avoid plotting values without a sex)
+inds$SEX <- factor(inds$SEX)
+
+#Finally set up a 3 panel figure and plot each relationship ignoring NAs
+par(mfrow=c(1,3))
+boxplot(DEGREE~SEX,data=na.omit(inds), col=c("red","blue"))
+boxplot(DEGREE_BINARY~SEX,data=na.omit(inds), col=c("red","blue"))
+plot(DEGREE~DEGREE_BINARY,data=na.omit(inds), col=c("red","blue")[SEX])
+legend("bottomright",c("Female","Male"),col=c("red","blue"),pch=1)
+```
+
+
+#More complex plots
+
+#Othe fun ways of plotting networks
+#Randomly
+plot(net, layout=layout_randomly,vertex.size=deg,vertex.label.cex=0.2,  edge.lty=c("solid"), edge.color="grey", vertex.color="red")
+
+# Convert adjacency matrix to igraph variable
+net_graph <- graph.adjacency(network,mode="undirected",weighted=TRUE,diag=FALSE)
+plot(net_graph)
+# Infer what community each node is in
+community <- leading.eigenvector.community(net_graph)
+# Convert to a list (as required by the plotting function)
+communities<-list()
+for (i in 1:max(community$membership)) { communities[[i]] <- which(community$membership == i) }
+
+# Define a colour for each species
+cols <- c("lightblue", "steelblue", "gold", "honeydew4", "brown2")
+# Plot the results
+plot(net_graph, vertex.color=cols[inds$SPECIES], vertex.size=3, vertex.label=NA,
+     + mark.groups=communities)
+     
+#Plot some of the network metrics
+
+#Plot the difference in degrees by sex (or anyoher category), and their relationship on a 3 panel plot:
+# fix empty sexes by by setting them to NA
+inds$SEX[inds$SEX == ""] <- NA
+#detach("package:sna")
+
+#drop empty factors (to avoid plotting values without a sex)
+inds$SEX <- factor(inds$SEX)
+
+#Finally set up a 3 panel figure and plot each relationship ignoring NAs
+par(mfrow=c(1,3))
+boxplot(DEGREE~SEX,data=na.omit(inds), col=c("red","blue"))
+boxplot(DEGREE_BINARY~SEX,data=na.omit(inds), col=c("red","blue"))
+plot(DEGREE~DEGREE_BINARY,data=na.omit(inds), col=c("red","blue")[SEX])
+legend("bottomright",c("Female","Male"),col=c("red","blue"),pch=1)
+
+
+-----End of script
