@@ -10,8 +10,8 @@ library(network)
 library(igraph)
 library(sna)
 library(intergraph)
+library(ggnetwork)
 
-setwd()
 
 ## specify the full URL for the data
 ghURL <- "https://raw.githubusercontent.com/Intertidal-Subtidal-WG/data_merge_intertidal_subtidal/master/tidy_data/combined_all_abundance_data_site.RDS"
@@ -327,7 +327,7 @@ plot(g_all) ## testing the nodes were removed
 ## The following command also removes loops (i.e. a species interacting with itself, 
 ## for instance through cannibalism); It is here if we need it, but for now I'm 
 ## not using it. 
-net = (igraph::delete.vertices(simplify(g_united), degree(g_united)==0)) 
+net = (igraph::delete.vertices(igraph::simplify(g_united), igraph::degree(g_united)==0))
 
 ## Create possible layouts for graphs
 circ <- layout_in_circle(g_all)
@@ -352,3 +352,63 @@ plot(g_sub,edge.arrow.size = 0.2)
 V(g_sub)["Carcinus maenas"]$color="yellow"
 plot(g_sub,edge.arrow.size = 0.2)
 
+
+###JULIEN TRYING GRAPHS#############################################
+#I am using 'net', which is the network without the cannibalism
+
+#determine if each link is inter or intra zone
+e <- as.data.frame(ends(net, E(net))) # create df with both ends of each edges
+e$zoneV1 <- NA #create columns to put the zone of the vertex at each end of each edge
+e$zoneV2 <- NA
+for (i in 1:nrow(e)){    #Do it!
+  for (j in 1:nrow(vertex2)){
+    if (e[i,1] == vertex2[j,1]){
+      e[i,3] <- vertex2[j,2]
+    } 
+    if (e[i,2] == vertex2[j,1]){
+      e[i,4] <- vertex2[j,2]
+    }
+  }
+}
+
+  # add an extra column with attribute for each edges with details (consiter direction)
+  # 9 possibilites. We can "merge" some categories while plotting
+e <- unite(e, e_attribute1, c(3,4), sep = "_", remove = F)
+net2 <- set_edge_attr(net, "e_zone", index = E(net), value = e$e_attribute1) # Set attributes to edges
+
+
+#calculate number of links for each node (degree)
+
+ggnet <- ggnetwork(net2) #Create data frame from the igraph object
+degr <- as.data.frame(igraph::degree(net2, v = V(net2), mode = "total"))# Calculate degree for each verticile
+names(degr)[1] <- "degr"
+ggnet2 <- merge(ggnet, degr, by.x = "name", by.y = "row.names")
+
+
+
+#Put name abreviation
+
+
+#Positionner selon zone or Louvain community detection algorythme ou intensity of
+#interaction donnée par la proportion de liens externes de chaque sous groupe dans le réseau
+
+#plot1 : Full name and size of the vertice with degree
+plot1 <- ggplot(ggnet2, aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_edges(arrow = arrow(length = unit(6, "pt"), type = "closed"))  + # Colour links by intra-type/intertype?
+  geom_nodes(aes(color = zone, size = degr), show.legend = F) +
+  scale_size_continuous(degr, range = c(2,20))+
+  geom_nodetext(aes(label = name),
+                fontface = "bold", size = 3.8)+
+  theme_blank()
+plot1
+
+#plot2 : plot1 + colour edges
+
+plot2 <- ggplot(ggnet2, aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_edges(aes(color = e_zone), arrow = arrow(length = unit(6, "pt"), type = "closed"))  + # Colour links by intra-type/intertype?
+  geom_nodes(aes(color = zone, size = degr), show.legend = F) +
+  scale_size_continuous(degr, range = c(2,20))+
+  geom_nodetext(aes(label = name),
+                fontface = "bold", size = 3.8)+
+  theme_blank()
+plot2
