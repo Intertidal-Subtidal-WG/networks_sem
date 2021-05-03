@@ -392,6 +392,19 @@ ggnet2 <- merge(ggnet, degr, by.x = "name", by.y = "row.names")
 #Positionner selon zone or Louvain community detection algorythme ou intensity of
 #interaction donnée par la proportion de liens externes de chaque sous groupe dans le réseau
 
+# set colours for each level of attributes
+ggnet2$zone <- factor(ggnet2$zone, levels = c("intertidal","subtidal","both"))
+v_col <- c("green", "blue", "red")
+
+ggnet2$e_zone <- factor(ggnet2$e_zone, levels = c("both_both","both_intertidal",
+                                                  "both_subtidal", "intertidal_both",
+                                                  "intertidal_intertidal", "intertidal_subtidal",
+                                                  "subtidal_both", "subtidal_intertidal",
+                                                  "subtidal_subtidal"))
+
+e_col_1 <- c("red","red", "grey", "grey", "green","grey", "green", "black",
+             "blue","grey", "black", "blue")
+
 #plot1 : Full name and size of the vertice with degree
 plot1 <- ggplot(ggnet2, aes(x = x, y = y, xend = xend, yend = yend)) +
   geom_edges(arrow = arrow(length = unit(6, "pt"), type = "closed"))  + # Colour links by intra-type/intertype?
@@ -406,9 +419,25 @@ plot1
 
 plot2 <- ggplot(ggnet2, aes(x = x, y = y, xend = xend, yend = yend)) +
   geom_edges(aes(color = e_zone), arrow = arrow(length = unit(6, "pt"), type = "closed"))  + # Colour links by intra-type/intertype?
+  scale_color_manual(values = e_col_1)+
   geom_nodes(aes(color = zone, size = degr), show.legend = F) +
   scale_size_continuous(degr, range = c(2,20))+
   geom_nodetext(aes(label = name),
                 fontface = "bold", size = 3.8)+
   theme_blank()
 plot2
+
+#plot 3
+# remove species with degree <= 5 
+net3 <- 
+ggnet3 <- ggnetwork(net3)
+
+plot3 <- ggplot(ggnet3, aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_edges(aes(color = e_zone), arrow = arrow(length = unit(6, "pt"), type = "closed"))  + # Colour links by intra-type/intertype?
+  scale_color_manual(values = e_col_1)+
+  geom_nodes(aes(color = zone, size = degr), show.legend = F) +
+  scale_size_continuous(degr, range = c(2,20))+
+  geom_nodetext(aes(label = name),
+                fontface = "bold", size = 3.8)+
+  theme_blank()
+plot3
