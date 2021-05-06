@@ -209,7 +209,7 @@ all_sp
 
 ## DATABASE 1: Jarrett's interaction database 
 ## Load Jarrett's interaction database
-inter <- read_csv("interactions_final.csv")
+inter <- read_csv("interactions/interactions_final.csv")
 
 ## Identify interactions from Jarrett's interaction database. All  interactions have
 ## been directionalized to involve a source taxon that preys on a target (i.e. entries
