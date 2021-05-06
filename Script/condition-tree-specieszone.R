@@ -225,4 +225,50 @@ for (i in (1:nrow(Ab_ratio))){
   }
 }
 
+# count the amount of samples containing each specie in each zone
+Ab_ratio$Nb_inter <- 0
+Ab_ratio$Nb_sub <- 0
 
+for (i in (1:nrow(Ab_ratio))){
+  for (j in (1:nrow(data_site3))){
+    if (Ab_ratio$organism[i] == data_site3$organism[j]){
+      if (data_site3$zone[j] == "Intertidal"){
+        Ab_ratio$Nb_inter[i] = Ab_ratio$Nb_inter[i] + 1
+      } else {
+        Ab_ratio$Nb_sub[i] = Ab_ratio$Nb_sub[i] + 1
+      }
+    }
+  }
+}
+
+#Calculate Ab_inter/Ab_int
+Ab_ratio$Ab_ratio <- Ab_ratio$Ab_inter/(Ab_ratio$Ab_sub + Ab_ratio$Ab_inter)
+
+#determine the zone of each specie
+
+#first condition
+for (i in (1:nrow(Ab_ratio))) {
+  if (Ab_ratio$Ab_ratio[i] > 0.85){
+    Ab_ratio$zone[i] = "intertidal"
+  }
+  if (Ab_ratio$Ab_ratio[i] < 0.15){
+    Ab_ratio$zone[i] = "subtidal"
+  } else {
+    Ab_ratio$zone = "both"
+  }
+}
+
+# deuxième condition
+
+for (i in (1:nrow(Ab_ratio))) {
+  if(Ab_ratio$zone[i] == "both"){
+    if (Ab_ratio$Nb_inter[i] < 2){
+      Ab_ratio$zone[i] = "subtidal"
+    }
+    if (Ab_ratio$Nb_sub[i] < 2){
+      Ab_ratio$zone[i] = "intertidal"  
+    } else {
+      Ab_ratio$zone[i] = "both"
+    }
+  }
+}
