@@ -201,18 +201,20 @@ all_sp<- comb[!duplicated(comb$organism), ]
 all_sp 
 
 # For each specie found in both zones evaluate the actual zone it is in according
-# to decision tree. A specie is considered both if (0.85 >= ab tot intertidal/ab tot subtidal >= 0.15),
+# to decision tree. A specie is considered both if (0.85 >= ab tot intertidal/(ab tot subtidal + intertidal) >= 0.15),
 # if the specie is present in at least 10% of the samples of each zone (intertidal and subtidal),
-# and if there is no reason to beleave individuals from both zones are isolated 
+# and if there is no reason to believe individuals from both zones are isolated 
 # and constitute two distinct populations.
 
-# 1) create a data frame with ab tot intertidal/ab tot subtidal for each specie found in both
+# 1) create a data frame with ab tot intertidal/(ab tot subtidal + Ab tot intertidal) for each specie found in both
+# 2) add a column with the % of sample containing each specie for both zone
 # 3) The actual decision tree
 
 Ab_ratio <- filter(comb, zone == "both", .preserve = T)
 Ab_ratio$Ab_inter <- 0
 Ab_ratio$Ab_sub <- 0
 
+#sum the abundances for each sapcie in  both zone
 for (i in (1:nrow(Ab_ratio))){
   for (j in (1:nrow(data_site3))){
     if (Ab_ratio$organism[i] == data_site3$organism[j]){
@@ -242,7 +244,7 @@ for (i in (1:nrow(Ab_ratio))){
   }
 }
 
-# Create a column in data_site3 for which all unic combination of sample-organism can be filtered
+# Create a column in data_site3 for which all unique combination of sample-organism can be filtered
 data_site4 <- data_site3
 data_site4 <- unite(data_site4, unic_sampleID, c("zone","year","site","level"),
                     sep = "_", remove = F)
@@ -285,29 +287,32 @@ Ab_ratio$Ab_ratio <- Ab_ratio$Ab_inter/(Ab_ratio$Ab_sub + Ab_ratio$Ab_inter)
 
 #determine the zone of each specie
 
-#first condition
+#first condition : species in both have abundances (0.85 >= ab tot intertidal/(ab tot subtidal + intertidal) >= 0.15)
+
 for (i in (1:nrow(Ab_ratio))) {
-  if (Ab_ratio$Ab_ratio[i] > 0.85){
+  if (Ab_ratio$Ab_ratio[i] > 0.85){ # 0.85 is the % threshold of abundance in intertidal
     Ab_ratio$zone[i] = "intertidal"
   }
-  if (Ab_ratio$Ab_ratio[i] < 0.15){
+  if (Ab_ratio$Ab_ratio[i] < 0.15){ # 0.15 is the % threshold of abundance in subtidal
     Ab_ratio$zone[i] = "subtidal"
   } else {
     Ab_ratio$zone = "both"
   }
 }
 
-# deuxième condition
+# deuxième condition : species in both are present in min 10% of the samples in each zone
 
 for (i in (1:nrow(Ab_ratio))) {
   if(Ab_ratio$zone[i] == "both"){
-    if (Ab_ratio$pourc_inter[i] < 0.1){
+    if (Ab_ratio$pourc_inter[i] < 0.1){ #0.1 is for the 10% of the samples contain the specie
       Ab_ratio$zone[i] = "subtidal"
     }
-    if (Ab_ratio$pourc_sub[i] < 0.1){
+    if (Ab_ratio$pourc_sub[i] < 0.1){ #0.1 is for the 10% of the samples contain the specie
       Ab_ratio$zone[i] = "intertidal"  
     } else {
       Ab_ratio$zone[i] = "both"
     }
   }
 }
+
+
