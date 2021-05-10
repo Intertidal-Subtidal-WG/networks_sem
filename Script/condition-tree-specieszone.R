@@ -202,9 +202,9 @@ all_sp
 
 # For each specie found in both zones evaluate the actual zone it is in according
 # to decision tree. A specie is considered both if (0.85 >= ab tot intertidal/ab tot subtidal >= 0.15),
-# if the specie is present in at least 2 samples of each zone (intertidal and subtidal),
-# and if there is no reason to beleave individuals from both zones are isonlates 
-# and constite two distinct populations.
+# if the specie is present in at least 10% of the samples of each zone (intertidal and subtidal),
+# and if there is no reason to beleave individuals from both zones are isolated 
+# and constitute two distinct populations.
 
 # 1) create a data frame with ab tot intertidal/ab tot subtidal for each specie found in both
 # 3) The actual decision tree
@@ -229,6 +229,7 @@ for (i in (1:nrow(Ab_ratio))){
 Ab_ratio$Nb_inter <- 0
 Ab_ratio$Nb_sub <- 0
 
+#count the number of time each specie is observed in each zone
 for (i in (1:nrow(Ab_ratio))){
   for (j in (1:nrow(data_site3))){
     if (Ab_ratio$organism[i] == data_site3$organism[j]){
@@ -240,6 +241,44 @@ for (i in (1:nrow(Ab_ratio))){
     }
   }
 }
+
+# Create a column in data_site3 for which all unic combination of sample-organism can be filtered
+data_site4 <- data_site3
+data_site4 <- unite(data_site4, unic_sampleID, c("zone","year","site","level"),
+                    sep = "_", remove = F)
+data_4_inter <- filter(data_site4, zone == "Intertidal")
+data_4_sub <- filter(data_site4, zone == "Subtidal")
+Ab_ratio$pres_inter <- 0
+Ab_ratio$pres_sub <- 0
+
+# count the number of samples where each specie was observed in intertidal
+for(i in (1:nrow(Ab_ratio))){
+  for (j in (1:nrow(data_4_inter))){
+    if(Ab_ratio$organism[i] == data_4_inter$organism[j]){
+      temp <- filter(data_4_inter, organism == Ab_ratio$organism[i])
+      temp2 <- unique(temp$unic_sampleID)
+      Ab_ratio$pres_inter[i] <- length(temp2)
+    }
+  }
+}
+
+# count the number of samples where each specie was observed in subtidal
+
+for(i in (1:nrow(Ab_ratio))){
+  for (j in (1:nrow(data_4_sub))){
+    if(Ab_ratio$organism[i] == data_4_sub$organism[j]){
+      temp <- filter(data_4_sub, organism == Ab_ratio$organism[i])
+      temp2 <- unique(temp$unic_sampleID)
+      Ab_ratio$pres_sub[i] <- length(temp2)
+    }
+  }
+}
+
+#pourcntage d'échantillons de chaque zone contenant l'espèce en assumant 187 échantillons
+#dans intertidal et 15 pour subtidal
+
+Ab_ratio$pourc_inter <- Ab_ratio$pres_inter/187
+Ab_ratio$pourc_sub <- Ab_ratio$pres_sub/15
 
 #Calculate Ab_inter/Ab_int
 Ab_ratio$Ab_ratio <- Ab_ratio$Ab_inter/(Ab_ratio$Ab_sub + Ab_ratio$Ab_inter)
@@ -262,10 +301,10 @@ for (i in (1:nrow(Ab_ratio))) {
 
 for (i in (1:nrow(Ab_ratio))) {
   if(Ab_ratio$zone[i] == "both"){
-    if (Ab_ratio$Nb_inter[i] < 2){
+    if (Ab_ratio$pourc_inter[i] < 0.1){
       Ab_ratio$zone[i] = "subtidal"
     }
-    if (Ab_ratio$Nb_sub[i] < 2){
+    if (Ab_ratio$pourc_sub[i] < 0.1){
       Ab_ratio$zone[i] = "intertidal"  
     } else {
       Ab_ratio$zone[i] = "both"
