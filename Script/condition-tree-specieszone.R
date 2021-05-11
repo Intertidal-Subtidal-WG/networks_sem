@@ -315,4 +315,5 @@ for (i in (1:nrow(Ab_ratio))) {
   }
 }
 
-
+species_classification <- Ab_ratio[,c("organism", "zone")]
+species_classification

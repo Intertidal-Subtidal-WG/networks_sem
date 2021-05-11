@@ -203,7 +203,15 @@ comb$zone[duplicated(comb$organism,fromLast = TRUE)] <- "both"
 all_sp<- comb[!duplicated(comb$organism), ]
 all_sp 
 
+#Combine all_sp with the output of the condition-tree-specieszone script to attribute proper zone
 
+for (i in (1:nrow(species_classification))){
+  for (j in (1:nrow(all_sp))){
+    if (species_classification$organism[i] == all_sp$organism[j]){
+      all_sp$zone[j] <- species_classification$zone[i]
+    }
+  }
+}
 
 ## START MAKING TROPHIC INTERACTION NETWORKS ----------------------------------------------------------------------
 
