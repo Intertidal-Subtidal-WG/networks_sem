@@ -24,7 +24,7 @@ library(stringr)
 
 # Create function that takes user name, a list of data frame to load in the environment, and the Sha of the commit of the last update of the repository.
 
-load_data_ADD <- function(user_name, df_list, Sha = "2e9957fe0b0164afe3d823883bacae5e8851dc1b?recursive=1"){
+load_data_ADD <- function(user_name, df_list, Sha = "27d16fa21b0fc5c9e939ed42ec3599244b6aed2c?recursive=1"){
   
   #create environment for the function
   env <- environment()
