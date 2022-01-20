@@ -43,6 +43,10 @@ int_dat <- bind_rows(int_dat, int_dat_2) %>%
          observationDateTime = map_chr(observationDateTime, ~ifelse(is.null(.x), "", .x)))
 
 ## export subtidal data
+<<<<<<< HEAD
+
+=======
+>>>>>>> 55492772a27ae4e89372ff82a6ecf85d35fa9775
 write_csv(int_dat, "./data/entered_int_data.csv")
 
 # pull subtidal species list from interactions database
@@ -57,8 +61,11 @@ sp_data2 <- read_sheet("https://docs.google.com/spreadsheets/d/16PwO_TI_YnSktYBo
 sp_data <- bind_rows(sp_data, sp_data2)
 
 write_csv(sp_data, "./data/entered_species_data.csv")
+<<<<<<< HEAD
+=======
 int_dat <- read_sheet("https://docs.google.com/spreadsheets/d/1f4a8mYrov0DiRBOoP1lbuEh_kxhQP6t7Ay6fH5q5gME/", 
                       sheet = "Working Interaction Data")
+>>>>>>> 55492772a27ae4e89372ff82a6ecf85d35fa9775
 
 
 # intertidal data ---------------------------------------------------------
@@ -74,6 +81,97 @@ intertidal_dat <- read_sheet("https://docs.google.com/spreadsheets/d/1ELUVTUnV1f
 ##
 ##
 
+<<<<<<< HEAD
+## pull intertidal species list 
+sp_data_intertidal <- read_sheet("https://docs.google.com/spreadsheets/d/1ELUVTUnV1fUMc3nBC6EFgCG4jwhcWCfoewATIK-BiLw/", 
+                      sheet = "Species List") %>% 
+  mutate(`Done = 1` = map_dbl(`Done = 1`, ~ifelse(is.null(.x), NA, .x) %>% as.numeric)) %>% 
+  mutate(`Added as new agents` = unlist(`Added as new agents`))
+
+## pull intertidal species list from Laura Dee's database
+sp_data2 <- read_sheet("<need to get data>", 
+                       sheet = "Species List") 
+
+sp_data <- bind_rows(sp_data, sp_data2)
+
+write_csv(sp_data, "./data/entered_species_data.csv")
+
+
+## bind all species lists together
+## (need to select common columns first, and do some name formatting)
+sp_data_simple <- sp_data %>% 
+  select(sourceTaxonName, `Taxonomic Level`, `EOL ID`, 
+         `WORMS ID`, `Common Name`, `Done = 1`, `Added as new agents`, 
+         `Aggregated taxa`, `Notes`, `search term`, `who is searching?`)
+
+sp_data_intertidal_simple <- sp_data_intertidal %>% 
+  select(sourceTaxonName, `Taxonomic Level`, `EOL ID`, 
+         `WORMS ID`, `Common Name`, `Done = 1`, `Added as new agents`, 
+         `Aggregated taxa`, `Notes`, `Search term`, `Who is searching?`) %>% 
+  rename(`who is searching?` = `Who is searching?`, 
+         `search term` = `Search term`)
+
+names(sp_data_simple) == names(sp_data_intertidal_simple)
+
+sp_data_all <- bind_rows(sp_data_simple, sp_data_intertidal_simple)
+
+## how many unique species are included in this list?
+n_distinct(sp_data_all$sourceTaxonName) # [1] 2293
+
+## how many are duplicates? LOTS
+sp_data_all %>% 
+  group_by(sourceTaxonName) %>% 
+  summarise(n = n()) %>% 
+  group_by(n) %>% 
+  summarise(n_species_with_x_rows = n())
+
+#       n n_species_with_x_rows
+# 1     1                  1992
+# 2     2                   265
+# 3     3                    33
+# 4     4                     3
+
+## COMMENT:
+## lots of duplicates (and some triplicates, quadruplets). 
+## What to do with these? Could filter to a single row per species
+## (see next chunk of code)
+## WILL ALSO WANT TO CHECK THAT MULTIPLE SYNONYMS AREN'T BEING USED
+## FOR SPECIES WITH ONLY ONE ROW
+
+## filter the complete species list to distinct species
+sp_data_all %>% 
+  group_by(sourceTaxonName) %>% 
+  slice(1) %>% 
+
+
+## import list of species found at Appledore
+sp_zone <- read_csv("data/species_list_by_zone.csv")
+
+## add column identifying Appledore Island species in full species list
+## (i.e. left join sp_zone to sp_data_all), and identify where those species
+## are found (intertidal, subtidal, or both?)
+
+sp_data_all %>% 
+  mutate(appledore_sp = as.factor(if_else(
+    sourceTaxonName %in% sp_zone$organism, 1, 0))) %>% 
+  group_by(appledore_sp) %>% 
+  summarise(n_sp = n_distinct(sourceTaxonName))
+  
+## COMMENT:
+## only 121 and of the 144 species in the Island list are currently 
+## included in the species list for interaction data... why could this be? 
+## Maybe because some aggregate/common names in our island list 
+## (e.g. Amphipoda, Barnacle, etc.) are being included in the interactions
+## data as set of relevant species (e.g., Balanus balanoides, etc.)
+
+sp_data_all <- sp_data_all %>% 
+  mutate(appledore_sp = as.factor(if_else(sourceTaxonName %in% 
+                                            sp_zone$organism, 1, 0))) %>% 
+  left_join(., sp_zone, by = c("sourceTaxonName" = "organism"))
+
+
+=======
+>>>>>>> 55492772a27ae4e89372ff82a6ecf85d35fa9775
 # combine all interaction sheets ------------------------------------------
 
 ## bind all datasets together
@@ -104,11 +202,27 @@ interactions <- interactions %>%
 ##
 ##
 
+<<<<<<< HEAD
+# get globi data (using full subtidal-intertidal interactions DB list)
+sp_data_ne_all <- sp_data_all %>%
+  filter(is.na(`Added as new agents`),
+         `Taxonomic Level`=="Species")
+
+## COMMENT:
+## This list currently include 347 species (compared to the 144 taxa
+## in our island list). What's up?
+## It's like that many of the higher level taxa have been disaggregated
+## to the species level in our interaction species list. We will need
+## create a cross table that links these disaggregated species
+## back to the organism as identified in the sp_zone table
+
+=======
 # get globi data
 sp_data_ne_subtidal <- sp_data %>%
   filter(is.na(`Added as new agents`),
          `Taxonomic Level`=="Species")
 
+>>>>>>> 55492772a27ae4e89372ff82a6ecf85d35fa9775
 # get worms synonyms for getting globi data
 get_valid_name <- function(.x){
   print(.x)
