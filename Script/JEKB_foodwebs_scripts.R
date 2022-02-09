@@ -28,26 +28,39 @@ gs4_auth()
 # subtidal data -----------------------------------------------------------
 
 ## import subtidal data from Byrnes Lab (most of the data)
-int_dat <- read_sheet("https://docs.google.com/spreadsheets/d/1f4a8mYrov0DiRBOoP1lbuEh_kxhQP6t7Ay6fH5q5gME/", 
-                      sheet = "Working Interaction Data")
+sub_dat <- read_sheet("https://docs.google.com/spreadsheets/d/1f4a8mYrov0DiRBOoP1lbuEh_kxhQP6t7Ay6fH5q5gME/", 
+                      sheet = "Working Interaction Data", 
+                      col_types = "cccccccccccc") %>% 
+  select(-`Ref ID`)
 
 ## import rest of subtidal data (from working group)
-int_dat_2 <- read_sheet("https://docs.google.com/spreadsheets/d/16PwO_TI_YnSktYBolK6MPuuvyhEu7xZy7j0jplmz5sg/edit#gid=1883520352",
-                        sheet = "Interaction Data")
+sub_dat_2 <- read_sheet("https://docs.google.com/spreadsheets/d/16PwO_TI_YnSktYBolK6MPuuvyhEu7xZy7j0jplmz5sg/edit#gid=1883520352",
+                        sheet = "Interaction Data", 
+                        col_types = "cccccccccccc") %>% 
+  select(-"...12")
 
 ## bind the subtidal data together
-int_dat <- bind_rows(int_dat, int_dat_2) %>%
+sub_dat <- bind_rows(sub_dat, sub_dat_2) %>%
   ## manipulate variables
-  mutate(`Ref ID` = map_chr(`Ref ID`, ~ifelse(is.null(.x), "", .x)),
+  mutate(#`Ref ID` = map_chr(`Ref ID`, ~ifelse(is.null(.x), "", .x)),
          `Paper ID` = map_chr(`Paper ID`, ~ifelse(is.null(.x), "", .x)),
          observationDateTime = map_chr(observationDateTime, ~ifelse(is.null(.x), "", .x)))
 
 ## export subtidal data
-write_csv(int_dat, "./data/entered_int_data.csv")
+write_csv(sub_dat, "./data/entered_sub_data.csv")
+
+## drop rows where the focal species (left-hand), interaction type, or target
+## species (right-hand) are missing
+sub_dat <- sub_dat %>% 
+  filter(!is.na(.$sourceTaxonName) & 
+           !is.na(.$interactionTypeName) & 
+           !is.na(.$targetTaxonName))
+
 
 # pull subtidal species list from interactions database
 sp_data <- read_sheet("https://docs.google.com/spreadsheets/d/1f4a8mYrov0DiRBOoP1lbuEh_kxhQP6t7Ay6fH5q5gME/", 
-                      sheet = "Species List")
+                      sheet = "Species List") %>% 
+  select(-c("...14":"...18"))
 
 sp_data2 <- read_sheet("https://docs.google.com/spreadsheets/d/16PwO_TI_YnSktYBolK6MPuuvyhEu7xZy7j0jplmz5sg/edit#gid=19019573", 
                        sheet = "Species List") %>%
@@ -56,35 +69,31 @@ sp_data2 <- read_sheet("https://docs.google.com/spreadsheets/d/16PwO_TI_YnSktYBo
 
 sp_data <- bind_rows(sp_data, sp_data2)
 
-write_csv(sp_data, "data/entered_species_data.csv")
+write_csv(sp_data, "data/entered_species_data_sub.csv")
+
 
 
 # intertidal data ---------------------------------------------------------
 
 ## import intertidal interaction data from working group data
-intertidal_dat <- read_sheet("https://docs.google.com/spreadsheets/d/1ELUVTUnV1fUMc3nBC6EFgCG4jwhcWCfoewATIK-BiLw/", sheet = "Interaction Data")
+int_dat <- read_sheet("https://docs.google.com/spreadsheets/d/1ELUVTUnV1fUMc3nBC6EFgCG4jwhcWCfoewATIK-BiLw/", 
+                      sheet = "Interaction Data", 
+                      col_types = "cccccccccc") %>% 
+  mutate(`Reference DOI` = as.character(NA), .after = `Paper ID`) %>% 
+  mutate(`Reference ISBN` = as.character(NA), .before = Notes) %>% 
+  select(-c("...10"))
 
 ## import other intertidal interaction data from Laura Dee et al.
-##
-##
-
-## reformat tables to a consistent format
-##
-##
+## LOL NOT!
 
 ## pull intertidal species list 
-sp_data_intertidal <- read_sheet("https://docs.google.com/spreadsheets/d/1ELUVTUnV1fUMc3nBC6EFgCG4jwhcWCfoewATIK-BiLw/", 
+sp_data_int <- read_sheet("https://docs.google.com/spreadsheets/d/1ELUVTUnV1fUMc3nBC6EFgCG4jwhcWCfoewATIK-BiLw/", 
                       sheet = "Species List") %>% 
   mutate(`Done = 1` = map_dbl(`Done = 1`, ~ifelse(is.null(.x), NA, .x) %>% as.numeric)) %>% 
   mutate(`Added as new agents` = unlist(`Added as new agents`))
 
-## pull intertidal species list from Laura Dee's database
-sp_data2 <- read_sheet("<need to get data>", 
-                       sheet = "Species List") 
-
-sp_data <- bind_rows(sp_data, sp_data2)
-
-write_csv(sp_data, "./data/entered_species_data.csv")
+## export intertidal species list
+write_csv(sp_data, "./data/entered_species_data_int.csv")
 
 
 ## bind all species lists together
@@ -94,16 +103,16 @@ sp_data_simple <- sp_data %>%
          `WORMS ID`, `Common Name`, `Done = 1`, `Added as new agents`, 
          `Aggregated taxa`, `Notes`, `search term`, `who is searching?`)
 
-sp_data_intertidal_simple <- sp_data_intertidal %>% 
+sp_data_int_simple <- sp_data_int %>% 
   select(sourceTaxonName, `Taxonomic Level`, `EOL ID`, 
          `WORMS ID`, `Common Name`, `Done = 1`, `Added as new agents`, 
          `Aggregated taxa`, `Notes`, `Search term`, `Who is searching?`) %>% 
   rename(`who is searching?` = `Who is searching?`, 
          `search term` = `Search term`)
 
-names(sp_data_simple) == names(sp_data_intertidal_simple)
+names(sp_data_simple) == names(sp_data_int_simple)
 
-sp_data_all <- bind_rows(sp_data_simple, sp_data_intertidal_simple)
+sp_data_all <- bind_rows(sp_data_simple, sp_data_int_simple)
 
 ## how many unique species are included in this list?
 n_distinct(sp_data_all$sourceTaxonName) # [1] 2293
@@ -129,23 +138,31 @@ sp_data_all %>%
 ## FOR SPECIES WITH ONLY ONE ROW
 
 ## filter the complete species list to distinct species
-sp_data_all %>% 
+sp_data_all <- sp_data_all %>% 
   group_by(sourceTaxonName) %>% 
-  slice(1) %>% 
-
+  slice(1)
 
 ## import list of species found at Appledore
-sp_zone <- read_csv("data/species_list_by_zone.csv")
+# sp_zone <- read_csv("data/species_list_by_zone.csv")
+## use the updated version of this list that includes the synonymized/
+## searched species names
+sp_zone <- read_sheet("https://docs.google.com/spreadsheets/d/1L92amK19NyS2KrAj7_kbQM0Gg_p9MduL08h2FyYEVHU/", 
+                      sheet = "species_list_by_zone") %>% 
+  mutate(DB_name = ifelse(is.na(DB_name), organism, DB_name))
+
 
 ## add column identifying Appledore Island species in full species list
 ## (i.e. left join sp_zone to sp_data_all), and identify where those species
 ## are found (intertidal, subtidal, or both?)
 
-sp_data_all %>% 
+sp_data_all <- sp_data_all %>% 
   mutate(appledore_sp = as.factor(if_else(
-    sourceTaxonName %in% sp_zone$organism, 1, 0))) %>% 
+    sourceTaxonName %in% sp_zone$DB_name, 1, 0))) 
+
+sp_data_all %>% 
   group_by(appledore_sp) %>% 
-  summarise(n_sp = n_distinct(sourceTaxonName))
+  summarise(n_sp = n_distinct(sourceTaxonName)) ## [1] 155 (up from 121)
+## Tianna thinks this looks good
   
 ## COMMENT:
 ## only 121 and of the 144 species in the Island list are currently 
@@ -155,26 +172,51 @@ sp_data_all %>%
 ## data as set of relevant species (e.g., Balanus balanoides, etc.)
 
 sp_data_all <- sp_data_all %>% 
-  mutate(appledore_sp = as.factor(if_else(sourceTaxonName %in% 
-                                            sp_zone$organism, 1, 0))) %>% 
-  left_join(., sp_zone, by = c("sourceTaxonName" = "organism"))
+  left_join(., sp_zone, by = c("sourceTaxonName" = "DB_name"))
+
+
+## which species in the island list aren't in the interactions DB lists?
+sp_data_all %>%
+  filter(appledore_sp == 1)
+sp_zone %>% 
+  filter(!DB_name %in% unique(
+    sp_data_all$sourceTaxonName[
+      sp_data_all$appledore_sp == 1])) %>% 
+  knitr::kable()
+
+## COMMENT:
+## currently 23 species included in the island species list that haven't
+## been matched to species in our interactions databases
+## some of these are because the island list includes generic/aggregate
+## names (e.g., "barnacle" instead of "Balanoides sp." or 
+## "myoxycephalus" instead of "Myoxycephalus scorpius"), others are 
+## because of synonyms (e.g., we have "TTectura testinalis" in our list, but
+## the accepted name is "Testudinalia testudinalis")
 
 
 # combine all interaction sheets ------------------------------------------
 
 ## bind all datasets together
-interactions <- bind_rows(int_data, intertidal_dat, ...)
+interactions <- bind_rows(sub_dat, int_dat)
 
 ## add a column indicating zone for the focal species 
 ## (intertidal, subtidal, both) -- will need to resolve species names
 ## in this list first before joining!!
-interactions <- interactions %>% 
-  left_join(., sp_zone, by = c("SourceTaxonID" == "organism"))
+# interactions <- interactions %>% 
+#   left_join(., sp_zone, by = c("SourceTaxonID" == "DB_name"))
 
+## COMMENT:
+## come back to this later after we've pulled the interaction data
+## from Globi
 
 ## pull the list of unique species from the combined data
-## 
-##
+interactors <- interactions %>% 
+  select(sourceTaxonName, targetTaxonName) %>% 
+  pivot_longer(cols = everything(), 
+               names_to = "source_target", values_to = "species") %>% 
+  group_by(species) %>%
+  slice(1) %>% 
+  ungroup()
 
 ## assign all unique species to corresponding 'organism' in the observational
 ## data (see 'sp_zone' table) -- need to do this because many taxa are
@@ -260,25 +302,51 @@ get_synonyms <- function(.x){
 #                 ~wm_synonyms(.x) %>% pull(scientificname)) %>%
 #   unlist()
 
-sp_data_ne_subtidal_2 <- sp_data_ne_subtidal %>%
-  mutate(valid_names = map_chr(sourceTaxonName, get_valid_name),
+# sp_data_ne_subtidal_2 <- sp_data_ne_subtidal %>%
+#   mutate(valid_names = map_chr(sourceTaxonName, get_valid_name),
+#          ids = map_int(valid_names, get_id),
+#          synonyms = map(ids, ~get_synonyms(.x)) )
+
+
+sp_zone2 <- sp_zone %>% 
+  mutate(valid_names = map_chr(DB_name, get_valid_name), 
          ids = map_int(valid_names, get_id),
-         synonyms = map(ids, ~get_synonyms(.x)) )
+         synonyms = map(ids, ~ get_synonyms(.x)))
+
+## matches not found for
+## "Barnacle sp."
+## "Blady Ulvoid"
+## "Diatom Tube Mat"
+## "Encrusting coralline"
+## "Filamentous Green"
+## "Obelia spp."
+## "Red Algal Turf"
+## "Tubular Ulvoid"
+## "UNID Juv Laminariales"
+## "UNID Juv Laminariales"
+## "Unidentified Erect Coralline"
+## "Unidentified Filamentous Red"
+## "Unidentified Red Blade"
 
 #save it for the future!
-saveRDS(sp_data_ne_subtidal_2, "data/sp_data_ne_subtidal_worms_resolves.rds")
+# saveRDS(sp_data_ne_subtidal_2, "data/sp_data_ne_subtidal_worms_resolves.rds")
 #sp_data_ne_subtidal_2 <- readRDS("data/sp_data_ne_subtidal_worms_resolves.rds")
+saveRDS(sp_zone2, "data/species_list_by_zone2.RDS")
 
 #make a vector of species to search on
-sp_to_search <- c(sp_data_ne_subtidal_2$sourceTaxonName,
-                  sp_data_ne_subtidal_2$valid_names#,
-                  # sp_data_ne_subtidal_2$synonyms%>%unlist(),
-                  # sp_data_ne_subtidal_2$synonyms %>%
-                  #   unlist() %>%
-                  #   stringr::str_remove(" var\\..*") %>%
-                  #   stringr::str_remove(" f\\..*")
-) %>%
-  unique()
+# sp_to_search <- c(sp_data_ne_subtidal_2$sourceTaxonName,
+#                   sp_data_ne_subtidal_2$valid_names#,
+#                   # sp_data_ne_subtidal_2$synonyms%>%unlist(),
+#                   # sp_data_ne_subtidal_2$synonyms %>%
+#                   #   unlist() %>%
+#                   #   stringr::str_remove(" var\\..*") %>%
+#                   #   stringr::str_remove(" f\\..*")
+# ) %>%
+#   unique()
+
+sp_to_search <- c(sp_zone2$DB_name, sp_zone2$valid_names) %>% ## 332
+  unique() ## 160 (drops more than half the names...)
+length(sp_to_search) ## [1] 160
 
 #function to be kind to the API
 get_interactions_sleepy <- function(.x, pause = 1, ...){
@@ -303,10 +371,10 @@ globi_ints <- map_df(sp_to_search, get_interactions_sleepy,
 #should this be piped in?
 #select(sourceTaxonName, targetTaxonName, interactionTypeName)
 
-write_csv(globi_ints, "./data/globi_ints_unresolved.csv")
+write_csv(globi_ints, "data/globi_ints_unresolved.csv")
 
 #resolve taxonomy on interaction sheet
-write_csv(globi_ints, "./data/globi_ints.csv")
+write_csv(globi_ints, "data/globi_ints.csv")
 
 
 # 2_join_int_data.R -------------------------------------------------------
@@ -317,46 +385,66 @@ library(readr)
 library(dplyr)
 
 #species list
-sp_data_ne_subtidal <- readRDS("data/sp_data_ne_subtidal_worms_resolves.rds")
+# sp_data_ne_subtidal <- readRDS("data/sp_data_ne_subtidal_worms_resolves.rds")
+sp_zone2 <- readRDS("data/species_list_by_zone2.RDS")
 
 # fix misspellings (i.e., add them back in)
-sp_data_ne_subtidal <- sp_data_ne_subtidal%>%
-  mutate(sourceTaxonName = ifelse(!is.na(sourceTaxonId), sourceTaxonId, sourceTaxonName))
-
+# sp_data_ne_subtidal <- sp_data_ne_subtidal%>%
+#   mutate(sourceTaxonName = ifelse(!is.na(sourceTaxonId), sourceTaxonId, sourceTaxonName))
 
 #load entered data, filter to what we have, and fix taxonomy with valid names
-int_dat <- read_csv("./data/entered_int_data.csv") %>%
-  filter(sourceTaxonName %in% sp_data_ne_subtidal$sourceTaxonName) %>%
-  filter(targetTaxonName %in% sp_data_ne_subtidal$sourceTaxonName) %>%
-  dplyr::select(sourceTaxonName, targetTaxonName, interactionTypeName) %>%
-  filter(interactionTypeName %in% c("eats", "eaten by", "preys on", "preyed upon by")) 
-
-int_dat <- int_dat %>%
-  left_join(sp_data_ne_subtidal %>%
-              select(sourceTaxonName, sourceTaxonName_valid = valid_names))%>%
-  left_join(sp_data_ne_subtidal %>%
-              select(targetTaxonName = sourceTaxonName, targetTaxonName_valid = valid_names)) %>%
-  mutate(sourceTaxonName = sourceTaxonName_valid,
-         targetTaxonName = targetTaxonName_valid) %>%
-  select(-sourceTaxonName_valid, -targetTaxonName_valid)
+# interactions <- ... ## need to change the chunk below to work with the 
+## combined interactions databases (called "interactions" above)
+# int_dat <- read_csv("./data/entered_int_data.csv") %>%
+#   filter(sourceTaxonName %in% sp_data_ne_subtidal$sourceTaxonName) %>%
+#   filter(targetTaxonName %in% sp_data_ne_subtidal$sourceTaxonName) %>%
+#   dplyr::select(sourceTaxonName, targetTaxonName, interactionTypeName) %>%
+#   filter(interactionTypeName %in% c("eats", "eaten by", "preys on", "preyed upon by")) 
+# 
+# int_dat <- int_dat %>%
+#   left_join(sp_data_ne_subtidal %>%
+#               select(sourceTaxonName, sourceTaxonName_valid = valid_names))%>%
+#   left_join(sp_data_ne_subtidal %>%
+#               select(targetTaxonName = sourceTaxonName, targetTaxonName_valid = valid_names)) %>%
+#   mutate(sourceTaxonName = sourceTaxonName_valid,
+#          targetTaxonName = targetTaxonName_valid) %>%
+#   select(-sourceTaxonName_valid, -targetTaxonName_valid)
 
 #load GLobi data
-globi_ints <- read_csv("./data/globi_ints.csv")%>%
-  filter(sourceTaxonName %in% sp_data_ne_subtidal$sourceTaxonName) %>%
-  filter(targetTaxonName %in% sp_data_ne_subtidal$sourceTaxonName)  %>%
-  mutate(interactionTypeName = case_when(
-    interactionTypeName == "eatenBy" ~ "eaten by",
-    interactionTypeName == "preysOn" ~ "preys on",
-    interactionTypeName == "preyedUponBy" ~ "preyed upon by",
-    interactionTypeName == "eats" ~ "eats"
-  ))
+globi_ints2 <- read_csv("data/globi_ints.csv") %>%
+  filter(sourceTaxonName %in% sp_zone2$DB_name) %>%
+  filter(targetTaxonName %in% sp_zone2$DB_name)
+
+table(globi_ints2$interactionTypeName)
+names(globi_ints2)
+
+globi_ints2 <- globi_ints2 %>% 
+  relocate(., c("sourceTaxonName", "targetTaxonName"), 
+           .before = 1)
+
+## let's try making a graph!
+test_g <- igraph::graph_from_data_frame(globi_ints2)
+
+## define graph layouts
+circ <- layout_in_circle(test_g)
+nice <- layout_nicely(test_g)
+fr <- layout.fruchterman.reingold(test_g)
+kw <- layout.kamada.kawai(test_g)
+
+## plot the graph
+plot(test_g, 
+     edge.arrow.size = 0.2, 
+     # vertex.label = NA,
+     vertex.size = 4, 
+     layout = kw) # plot as web, remove names
 
 
-int_dat <- bind_rows(int_dat, globi_ints)  %>%
-  group_by(sourceTaxonName, targetTaxonName, interactionTypeName) %>%
-  slice(1L)
+## combine Globi and lit search data
+# interactions_comp <- bind_rows(interactions, globi_ints)  %>%
+#   group_by(sourceTaxonName, targetTaxonName, interactionTypeName) %>%
+#   slice(1L)
 
-write_csv(int_dat, "./data/cleaned_joined_int_data.csv")
+write_csv(interactions_comp, "./data/cleaned_joined_int_data.csv")
 
 
 # 3_get_species_by_site.R -------------------------------------------------
@@ -402,8 +490,8 @@ sp_by_transect <- map(files, read_csv) %>%
 
 # load species list from web
 
-sp_data <- readRDS("data/sp_data_ne_subtidal_worms_resolves.rds")
-
+# sp_data <- readRDS("data/sp_data_ne_subtidal_worms_resolves.rds")
+sp_zone2 <- readRDS("data/species_list_by_zone2.RDS")
 
 # make some changes
 sp_by_transect <- sp_by_transect %>%
@@ -483,19 +571,18 @@ library(NetIndices)
 
 #functions
 source("scripts/make_web_functions.R")
+URL <- "https://raw.githubusercontent.com/jebyrnes/keen_one_foodwebs/main/scripts/make_web_functions.R"
+source(URL)
 
 #get species
-sp_by_transect_only<- read_csv("data/species_list_by_site_transect_year.csv")
+# sp_by_transect_only<- read_csv("data/species_list_by_site_transect_year.csv")
+## replace with site-by-year species list
 
 # get interactions
 foodweb <- read_csv("data/cleaned_joined_int_data.csv") %>%
   filter(interactionTypeName %in%
            c("preys on", "preyed upon by",
              "eats", "is eaten by"))
-
-
-
-#
 
 # Helpful functions from my ole' GCB paper
 consumer_degrees<-function(a.matrix){ 
@@ -548,14 +635,21 @@ add_web_metrics <- . %>%
 
 # Get the whole enchilada
 
-web_all <- sp_by_transect_only %>%
-  group_by(SPECIES) %>%
+# web_all <- sp_by_transect_only %>%
+#   group_by(SPECIES) %>%
+#   slice(1L) %>%
+#   ungroup() %>%
+#   group_by(all=1) %>%
+#   add_web_info %>%
+#   add_web_metrics
+
+web_all <- sp_zone2 %>%
+  group_by(DB_name) %>%
   slice(1L) %>%
   ungroup() %>%
   group_by(all=1) %>%
   add_web_info %>%
   add_web_metrics
-
 
 xy_tab <- web_all$graph[[1]] %>% 
   activate("nodes") %>%
