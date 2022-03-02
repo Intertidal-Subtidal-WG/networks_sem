@@ -115,7 +115,7 @@ names(sp_data_simple) == names(sp_data_int_simple)
 sp_data_all <- bind_rows(sp_data_simple, sp_data_int_simple)
 
 ## how many unique species are included in this list?
-n_distinct(sp_data_all$sourceTaxonName) # [1] 2293
+n_distinct(sp_data_all$sourceTaxonName) # [1] 2302
 
 ## how many are duplicates? LOTS
 sp_data_all %>% 
@@ -125,10 +125,10 @@ sp_data_all %>%
   summarise(n_species_with_x_rows = n())
 
 #       n n_species_with_x_rows
-# 1     1                  1992
-# 2     2                   265
-# 3     3                    33
-# 4     4                     3
+# 1     1                  1996
+# 2     2                   268
+# 3     3                    34
+# 4     4                     4
 
 ## COMMENT:
 ## lots of duplicates (and some triplicates, quadruplets). 
@@ -233,9 +233,9 @@ interactors <- interactions %>%
 ##
 
 # get globi data (using full subtidal-intertidal interactions DB list)
-sp_data_ne_all <- sp_data_all %>%
-  filter(is.na(`Added as new agents`),
-         `Taxonomic Level`=="Species")
+# sp_data_ne_all <- sp_data_all %>%
+#   filter(is.na(`Added as new agents`),
+#          `Taxonomic Level`=="Species")
 
 ## COMMENT:
 ## This list currently include 347 species (compared to the 144 taxa
@@ -247,9 +247,9 @@ sp_data_ne_all <- sp_data_all %>%
 
 
 # get globi data
-sp_data_ne_subtidal <- sp_data %>%
-  filter(is.na(`Added as new agents`),
-         `Taxonomic Level`=="Species")
+# sp_data_ne_subtidal <- sp_data %>%
+#   filter(is.na(`Added as new agents`),
+#          `Taxonomic Level`=="Species")
 
 
 # get worms synonyms for getting globi data
@@ -379,8 +379,6 @@ write_csv(globi_ints, "data/globi_ints.csv")
 
 # 2_join_int_data.R -------------------------------------------------------
 
-
-
 library(readr)
 library(dplyr)
 
@@ -416,28 +414,60 @@ globi_ints2 <- read_csv("data/globi_ints.csv") %>%
   filter(targetTaxonName %in% sp_zone2$DB_name)
 
 table(globi_ints2$interactionTypeName)
+# eaten by           eats preyed upon by       preys on 
+#      410            417            178            170 
 names(globi_ints2)
 
 globi_ints2 <- globi_ints2 %>% 
-  relocate(., c("sourceTaxonName", "targetTaxonName"), 
-           .before = 1)
+  # mutate(sourceTaxonName2 = sp_zone2$organism[sp_zone2$valid_names == .$sourceTaxonName]) %>% 
+  # mutate(sourceTaxonName2 = ifelse(sourceTaxonName == sp_zone2$valid_names, 
+  #                                  sp_zone2$organism, NA), 
+  #        targetTaxonName2 = ifelse(targetTaxonName == sp_zone2$valid_names, 
+  #                                  sp_zone2$organism, NA)) %>% 
+  left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
+            by = c("sourceTaxonName" = "valid_names")) %>% 
+  rename(sourceTaxonName2 = organism) %>% 
+  left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
+            by = c("targetTaxonName" = "valid_names")) %>% 
+  rename(targetTaxonName2 = organism) %>% 
+  relocate(., c("sourceTaxonName2", "targetTaxonName2"), 
+           .before = 1) %>% 
+  left_join(x., y = sp_zone2[c("organism", "sp_zone")], 
+            by = c("sourceTaxonName2" = "organism"))
 
 ## let's try making a graph!
-test_g <- igraph::graph_from_data_frame(globi_ints2)
+globi_g <- igraph::graph_from_data_frame(globi_ints2)
+
+## add sp_zone as a vertex
+V(globi_g)$sp_zone <- globi_g$sp_zone
+
+## add colours for each zone
+V(globi_g)[globi_g$sp_zone == 'Intertidal']$color = "lightblue"
+V(globi_g)[sp_zone == 'Subtidal']$color = "lightgreen"
+V(globi_g)[sp_zone == 'Both']$color = "grey"
+plot(g_united) ## testing the colors were added
+
+colrs <- c("grey50", "tomato", "gold")
+V(globi_g)$color <- colrs[V(globi_g)$sp_zone]
 
 ## define graph layouts
-circ <- layout_in_circle(test_g)
-nice <- layout_nicely(test_g)
-fr <- layout.fruchterman.reingold(test_g)
-kw <- layout.kamada.kawai(test_g)
+circ <- layout_in_circle(globi_g)
+nice <- layout_nicely(globi_g)
+fr <- layout.fruchterman.reingold(globi_g)
+kw <- layout.kamada.kawai(globi_g)
 
 ## plot the graph
-plot(test_g, 
+# color_dict = {"m": "blue", "f": "pink"}
+# color_dict = {"Intertidal": "blue", "Subtidal": "red", "Both": "purple"}
+plot(globi_g, 
      edge.arrow.size = 0.2, 
      # vertex.label = NA,
-     vertex.size = 4, 
-     layout = kw) # plot as web, remove names
+     vertex.size = igraph::degree(globi_g, mode = "all") * 0.1, 
+     vertex.color = c("blue", "red", "white"), 
+     layout = circ) # plot as web, remove names
 
+V(globi_g)
+E(globi_g)
 
 ## combine Globi and lit search data
 # interactions_comp <- bind_rows(interactions, globi_ints)  %>%
@@ -446,6 +476,57 @@ plot(test_g,
 
 write_csv(interactions_comp, "./data/cleaned_joined_int_data.csv")
 
+
+interactions2 <- interactions %>% 
+  left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
+            by = c("sourceTaxonName" = "valid_names")) %>% 
+  rename(sourceTaxonName2 = organism) %>% 
+  left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
+            by = c("targetTaxonName" = "valid_names")) %>% 
+  rename(targetTaxonName2 = organism) %>% 
+  relocate(., c("sourceTaxonName2", "targetTaxonName2"), 
+           .before = 1)
+
+length(which(is.na(interactions2$sourceTaxonName2))) ## [1] 3409
+length(which(is.na(interactions2$targetTaxonName2))) ## [1] 4736
+
+## WHAT'S GOING ON HERE????? revisit with Jarrett
+
+## drop the NAs for now
+interactions2 <- interactions2 %>% 
+  drop_na(sourceTaxonName2, targetTaxonName2)
+
+## let's try making a graph!
+database_g <- igraph::graph_from_data_frame(interactions2)
+
+## define graph layouts
+circ <- layout_in_circle(database_g)
+nice <- layout_nicely(database_g)
+fr <- layout.fruchterman.reingold(database_g)
+kw <- layout.kamada.kawai(database_g)
+
+## plot the graph
+
+plot(database_g, 
+     edge.arrow.size = 0.2, 
+     # vertex.label = NA,
+     vertex.size = igraph::degree(database_g, mode = "all") * 0.1, 
+     layout = circ) # plot as web, remove names
+
+## unite the two graphs!
+g_united <-igraph::union(test_g,database_g) # Unite all graphs
+circ <- layout_in_circle(g_united)
+
+plot(g_united, 
+     edge.arrow.size = 0.2, 
+     # vertex.label = NA,
+     vertex.size = igraph::degree(g_united, mode = "all") * 0.1, 
+     layout = circ)
+
+V(g_united)
+E(g_united)
+
+saveRDS(g_united, "data/combined_graph_int_sub_DB_globi.RDS")
 
 # 3_get_species_by_site.R -------------------------------------------------
 
