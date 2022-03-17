@@ -592,6 +592,10 @@ write_csv(interactions_comb, "data/combined_litsearch_globi_interactions.csv")
 ## remove any potential duplicates (i.e., we want all interactions to be 
 ## in one direction, from the resource/prey to the consumer/predator)
 
+## read in combined dataset
+# interactions_comb <- read_csv(
+#   "data/combined_litsearch_globi_interactions.csv")
+
 ## split data into two subsets:
 unique(interactions_comb$interactionTypeName)
 # [1] "eaten by"                      
@@ -704,13 +708,14 @@ plot(combined_graph,
      edge.arrow.size = 0.2, 
      vertex.label = NA,
      vertex.size = igraph::degree(combined_graph, mode = "all") * 0.1, 
-     vertex.color = c("blue", "red", "white"), 
-     layout = fr) # plot as web, remove names
+     # vertex.color = c("blue", "red", "white"), 
+     layout = kw) # plot as web, remove names
 
 V(combined_graph)
 E(combined_graph)
 
 saveRDS(combined_graph, "data/combined_graph_int_sub_DB_globi.RDS")
+# combined_graph <- readRDS(, "data/combined_graph_int_sub_DB_globi.RDS")
 
 
 # 3_get_species_by_site.R -------------------------------------------------
