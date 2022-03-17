@@ -198,6 +198,7 @@ sp_zone %>%
 
 ## bind all datasets together
 interactions <- bind_rows(sub_dat, int_dat)
+write_csv(interactions, "data/intertidal_subtidal_interactions_DB.csv")
 
 ## add a column indicating zone for the focal species 
 ## (intertidal, subtidal, both) -- will need to resolve species names
@@ -433,14 +434,26 @@ globi_ints2 <- globi_ints2 %>%
   relocate(., c("sourceTaxonName2", "targetTaxonName2"), 
            .before = 1) %>% 
   left_join(x., y = sp_zone2[c("organism", "sp_zone")], 
-            by = c("sourceTaxonName2" = "organism"))
+            by = c("sourceTaxonName2" = "organism")) %>% 
+  rename(sourceTaxon_zone = sp_zone) %>% 
+  relocate(., "sourceTaxon_zone", .after = targetTaxonName2) %>% 
+  left_join(x., y = sp_zone2[c("organism", "sp_zone")], 
+            by = c("targetTaxonName2" = "organism")) %>% 
+  rename(targetTaxon_zone = sp_zone) %>% 
+  relocate(., "targetTaxon_zone", .after = sourceTaxon_zone) 
 
 ## let's try making a graph!
-globi_g <- igraph::graph_from_data_frame(globi_ints2)
+library(igraph)
+globi_g <- igraph::graph_from_data_frame(globi_ints2, 
+                                         directed = TRUE, 
+                                         )
 
 ## add sp_zone as a vertex
-V(globi_g)$sp_zone <- globi_g$sp_zone
+# set.vertex.attribute(globi_g, sp_zone2)
 
+test <- V(globi_g)$names
+                             
+                             
 ## add colours for each zone
 V(globi_g)[globi_g$sp_zone == 'Intertidal']$color = "lightblue"
 V(globi_g)[sp_zone == 'Subtidal']$color = "lightgreen"
@@ -469,15 +482,18 @@ plot(globi_g,
 V(globi_g)
 E(globi_g)
 
-## combine Globi and lit search data
-# interactions_comp <- bind_rows(interactions, globi_ints)  %>%
-#   group_by(sourceTaxonName, targetTaxonName, interactionTypeName) %>%
-#   slice(1L)
-
-write_csv(interactions_comp, "./data/cleaned_joined_int_data.csv")
-
+# write_csv(interactions_comp, "./data/cleaned_joined_int_data.csv")
+interactions <- read_csv("data/intertidal_subtidal_interactionds_DB.csv")
 
 interactions2 <- interactions %>% 
+  # left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
+  #           by = c("sourceTaxonName" = "valid_names")) %>% 
+  # rename(sourceTaxonName2 = organism) %>% 
+  # left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
+  #           by = c("targetTaxonName" = "valid_names")) %>% 
+  # rename(targetTaxonName2 = organism) %>% 
+  # relocate(., c("sourceTaxonName2", "targetTaxonName2"), 
+  #          .before = 1) %>% 
   left_join(x = ., y = sp_zone2[c("organism", "valid_names")], 
             by = c("sourceTaxonName" = "valid_names")) %>% 
   rename(sourceTaxonName2 = organism) %>% 
@@ -485,7 +501,17 @@ interactions2 <- interactions %>%
             by = c("targetTaxonName" = "valid_names")) %>% 
   rename(targetTaxonName2 = organism) %>% 
   relocate(., c("sourceTaxonName2", "targetTaxonName2"), 
-           .before = 1)
+           .before = 1) %>% 
+  # relocate(sourceTaxonName, .after = sourceTaxonName2) %>% 
+  # relocate(targetTaxonName, .after = targetTaxonName2)
+  left_join(x., y = sp_zone2[c("organism", "sp_zone")], 
+            by = c("sourceTaxonName2" = "organism")) %>% 
+  rename(sourceTaxon_zone = sp_zone) %>% 
+  relocate(., "sourceTaxon_zone", .after = targetTaxonName2) %>% 
+  left_join(x., y = sp_zone2[c("organism", "sp_zone")], 
+            by = c("targetTaxonName2" = "organism")) %>% 
+  rename(targetTaxon_zone = sp_zone) %>% 
+  relocate(., "targetTaxon_zone", .after = sourceTaxon_zone) 
 
 length(which(is.na(interactions2$sourceTaxonName2))) ## [1] 3409
 length(which(is.na(interactions2$targetTaxonName2))) ## [1] 4736
@@ -527,6 +553,165 @@ V(g_united)
 E(g_united)
 
 saveRDS(g_united, "data/combined_graph_int_sub_DB_globi.RDS")
+
+
+# combined network --------------------------------------------------------
+
+## read in required data
+## sp_zone2
+## globi_ints2
+## interactions2
+
+## what does the input data look like?
+nrow(globi_ints2) ## [1] 1557
+nrow(interactions2) ## [1] 656
+
+## combine Globi and lit search data
+interactions_comb <- bind_rows(interactions2, globi_ints2)  %>%
+  group_by(sourceTaxonName2, targetTaxonName2, interactionTypeName) %>%
+  slice(1L)
+
+nrow(interactions_comb) ## [1] 866
+View(interactions_comb)
+
+## need to correct one interaction that is currently NA for interaction type
+interactions_comb <- interactions_comb %>% 
+  ## correct one species interaction type that is currently NA but
+  ## should actually be "preys on" 
+  ## (it's actually auto-cannabilism by Hiatella arctica) 
+  mutate(interactionTypeName = ifelse(is.na(interactionTypeName), 
+                                      "preys on", 
+                                      interactionTypeName))
+length(which(is.na(interactions_comb$interactionTypeName))) ## [1] 0
+
+## save combined dataset
+write_csv(interactions_comb, "data/combined_litsearch_globi_interactions.csv")
+
+## COMMENT:
+## we still need to adjust the direction of these interactions and 
+## remove any potential duplicates (i.e., we want all interactions to be 
+## in one direction, from the resource/prey to the consumer/predator)
+
+## split data into two subsets:
+unique(interactions_comb$interactionTypeName)
+# [1] "eaten by"                      
+# [2] "preyed upon by"                
+# [3] "has epiphyte"                  
+# [4] "eats"                          
+# [5] "preys on"                      
+# [6] "mutualistically interacts with"
+# [7] "epiphyte of"                   
+# [8] "parasite of"                   
+# [9] "epibiont of"                   
+# [10] "competes with"                 
+# [11] "visits"  
+
+## subset 1: consuming (don't need to modify)
+interactions_comb_eats <- interactions_comb %>% 
+  ## filter to "consuming" interactions
+  filter(interactionTypeName %in% c("eats", 
+                                    "preys on", 
+                                    "visits", 
+                                    "epiphyte of", 
+                                    "parasite of", 
+                                    "epibiont of")) %>% 
+  ## move the interactionTypeName column to a more convenient spot
+  relocate(interactionTypeName, .after = targetTaxon_zone)
+nrow(interactions_comb_eats) ## [1] 468
+
+## subset 2: consumed (need to modify)
+interactions_comb_eaten <- interactions_comb %>% 
+  ## filter to "consumed" interactions
+  filter(interactionTypeName %in% c("eaten by", 
+                                    "preyed upon by", 
+                                    "has epiphyte"))
+nrow(interactions_comb_eaten) ## [1] 395
+
+## COMMENT:
+## there are 4 interactions that aren't captured by these subsets because
+## they are not trophic interactions (and shouldn't be included in our
+## trophic/food-web analysis). These are:
+interactions_comb %>% 
+  ungroup() %>% 
+  filter(interactionTypeName %in% c("competes with", 
+                                    "mutualistically interacts with")) %>% 
+  select(sourceTaxonName2, targetTaxonName2, interactionTypeName)
+#   sourceTaxonName2 targetTaxonName2 interactionTypeName        
+# 1 Cancer borealis  Chondrus crispus mutualistically interacts …
+# 2 Cancer irroratus Chondrus crispus mutualistically interacts …
+# 3 Hiatella arctica Mytilus edulis   competes with
+
+## now, flip the direction of the "eaten" interactions, so that the
+## sourceTaxon becomes the targetTaxon and vise versa
+interactions_comb_eaten2 <- interactions_comb_eaten %>% 
+  ## first need to give the relevant columns new names
+  rename(sourceTaxonName3  = targetTaxonName2, 
+         targetTaxonName3  = sourceTaxonName2, 
+         sourceTaxon_zone2 = targetTaxon_zone, 
+         targetTaxon_zone2 = sourceTaxon_zone) %>% 
+  ## then replace with the correct column names 
+  # (so we can re-join the two subsets) 
+  rename(sourceTaxonName2 = sourceTaxonName3, 
+         targetTaxonName2 = targetTaxonName3, 
+         sourceTaxon_zone = sourceTaxon_zone2, 
+         targetTaxon_zone = targetTaxon_zone2) %>% 
+  ## and reorder the columns to match the order in the other subset
+  select(sourceTaxonName2, targetTaxonName2, 
+         sourceTaxon_zone, targetTaxon_zone, 
+         interactionTypeName, 
+         `Paper ID`:sourceTaxonName, 
+         targetTaxonName:study_source_citation) %>% 
+  ## redefine the interaction types to reflect the change in direction
+  mutate(interactionTypeName = 
+           case_when(interactionTypeName == "eaten by" ~ "eats", 
+                     interactionTypeName == "preyed upon by" ~ "preys on", 
+                     interactionTypeName == "has epiphyte" ~ "epiphyte of"))
+
+## join the two subsets back together and remove duplicates
+interactions_comb2 <- bind_rows(interactions_comb_eats, 
+                                interactions_comb_eaten2) %>% 
+  group_by(sourceTaxonName2, targetTaxonName2, interactionTypeName) %>%
+  slice(1L)
+
+nrow(interactions_comb2) ## [1] 550 -- this seems low, but okay!!
+
+## write out the cleaned combined dataset
+write_csv(interactions_comb2, 
+          "data/combined_litsearch_globi_interactions2.csv")
+
+## now, let's try making a network!
+combined_graph <- igraph::graph_from_data_frame(interactions_comb2)
+
+## add colours for each zone
+V(globi_g)[globi_g$sp_zone == 'Intertidal']$color = "lightblue"
+V(globi_g)[sp_zone == 'Subtidal']$color = "lightgreen"
+V(globi_g)[sp_zone == 'Both']$color = "grey"
+plot(g_united) ## testing the colors were added
+
+colrs <- c("grey50", "tomato", "gold")
+V(globi_g)$color <- colrs[V(globi_g)$sp_zone]
+
+## define graph layouts
+circ <- layout_in_circle(combined_graph)
+nice <- layout_nicely(combined_graph)
+fr <- layout.fruchterman.reingold(combined_graph)
+kw <- layout.kamada.kawai(combined_graph)
+
+## plot the graph
+# color_dict = {"m": "blue", "f": "pink"}
+# color_dict = {"Intertidal": "blue", "Subtidal": "red", "Both": "purple"}
+plot(combined_graph, 
+     edge.arrow.size = 0.2, 
+     vertex.label = NA,
+     vertex.size = igraph::degree(combined_graph, mode = "all") * 0.1, 
+     vertex.color = c("blue", "red", "white"), 
+     layout = fr) # plot as web, remove names
+
+V(combined_graph)
+E(combined_graph)
+
+saveRDS(combined_graph, "data/combined_graph_int_sub_DB_globi.RDS")
+
 
 # 3_get_species_by_site.R -------------------------------------------------
 
