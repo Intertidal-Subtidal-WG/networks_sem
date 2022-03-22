@@ -1,10 +1,14 @@
 ## networks for BEM presentation
+## Created by: Joey Burant
+## Last updated: 22 March 2022
 
 ## load required packages
-library(readr)
-library(tidyr)
-library(dplyr)
-library(purrr)
+library(tidyverse)
+# library(readr)
+# library(tidyr)
+# library(dplyr)
+# library(purrr)
+library(patchwork)
 ## all the graphing/network packages!
 library(igraph)
 library(tidygraph)
@@ -15,11 +19,16 @@ library(ggraph)
 ## want these three colour but in a slightly different order
 ## green = subtidal, orange = intertidal, purple = subtidal
 net_pal <- RColorBrewer::brewer.pal("Dark2", n = 3)[c(1,3,2)]
+
 ## load data
+
+## these datasets come from wrangling in JEKB_foodwebs_scripts.R
+## changed to this script to clean things up...
 
 ## interactions database (combined literature and GLOBI data)
 interactions_comb2 <- read_csv(
   "data/combined_litsearch_globi_interactions2.csv")
+nrow(interactions_comb2) ## [1] 550
 
 ## combined all epibiont/epiphyte interactions into one group
 ## remove one parasitic interaction and one 'visitor' (?)
@@ -31,6 +40,7 @@ interactions_comb2 <- interactions_comb2 %>%
 
 ## island species list
 sp_zone2 <- readRDS("data/species_list_by_zone2.RDS")
+nrow(sp_zone2) ## [1] 165
 
 
 # combined interaction network --------------------------------------------
@@ -382,5 +392,8 @@ p.int <- layout_int2 %>%
 ggsave(filename = "Plots/network_intertidal.png", plot = p.int, 
        width = 6, heigh = 4.5, units = "in", dpi = "retina")
 
-# library(patchwork)
-# (p.sub + p.int) / p.comb
+
+# plot all three networks together ----------------------------------------
+
+## using patchwork
+(p.sub + p.int) / p.comb
