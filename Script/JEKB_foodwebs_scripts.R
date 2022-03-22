@@ -632,7 +632,7 @@ interactions_comb_eaten <- interactions_comb %>%
 nrow(interactions_comb_eaten) ## [1] 395
 
 ## COMMENT:
-## there are 4 interactions that aren't captured by these subsets because
+## there are 3 interactions that aren't captured by these subsets because
 ## they are not trophic interactions (and shouldn't be included in our
 ## trophic/food-web analysis). These are:
 interactions_comb %>% 
@@ -687,19 +687,100 @@ write_csv(interactions_comb2,
 combined_graph <- igraph::graph_from_data_frame(interactions_comb2)
 
 ## add colours for each zone
-V(globi_g)[globi_g$sp_zone == 'Intertidal']$color = "lightblue"
-V(globi_g)[sp_zone == 'Subtidal']$color = "lightgreen"
-V(globi_g)[sp_zone == 'Both']$color = "grey"
-plot(g_united) ## testing the colors were added
+# V(globi_g)[globi_g$sp_zone == 'Intertidal']$color = "lightblue"
+# V(globi_g)[sp_zone == 'Subtidal']$color = "lightgreen"
+# V(globi_g)[sp_zone == 'Both']$color = "grey"
+# plot(g_united) ## testing the colors were added
 
-colrs <- c("grey50", "tomato", "gold")
-V(globi_g)$color <- colrs[V(globi_g)$sp_zone]
+# colrs <- c("grey50", "tomato", "gold")
+# V(globi_g)$color <- colrs[V(globi_g)$sp_zone]
+
+##
+vertex_attr_names(combined_graph)
+# vertex_attr(combined_graph)
+
+V(combined_graph)$name
+graphed_sp <- tibble(name = V(combined_graph)$name) %>% 
+  left_join(., distinct(sp_zone2[c("organism", "sp_zone")]), 
+            by = c("name" = "organism"))
+
+V(combined_graph)$zone <- graphed_sp$sp_zone
+V(combined_graph)$interaction_type <- interactions_comb2$interactionTypeName
+V(combined_graph)$degree <- igraph::degree(combined_graph, 
+                                           mode = "all") * 0.1
+
+edge_attr_names(combined_graph)
+# edge_attr(combined_graph)
+
+# E(combined_graph)$lty <- fct_recode(interactions_comb2$interactionTypeName, 
+#            solid = "eats", dashed = "epibiont of", 
+#            dashed = "epiphyte of", dotdash = "parasite of", 
+#            longdash = "preys on", twodash = "visits")
+# 
+# E(combined_graph)$interaction_type <- interactions_comb2$interactionTypeName
+# E(combined_graph)$interaction_type
+# # plot(combined_graph)
+# 
+# interactions_comb2 <- interactions_comb2 %>% 
+#   mutate(interaction_lty = 
+#            case_when(interactionTypeName == "eats" ~ "solid", 
+#                      interactionTypeName == "epibiont of" ~ "dashed", 
+#                      interactionTypeName == "epiphyte of" ~ "dashed", 
+#                      interactionTypeName == "parasite of" ~ "dotdash", 
+#                      interactionTypeName == "preys on" ~ "longdash", 
+#                      interactionTypeName == "visits" ~ "twodash"))
+# 
+# set.edge.attribute(combined_graph, "lty", 
+#                    value = interactions_comb2$interactionTypeName)
+# 
+# E(combined_graph)$linetype <- interactions_comb2$interaction_lty
+# E(combined_graph)$linetype
+
+simplify(combined_graph)
+GGally::ggnet2(simplify(combined_graph), 
+               layout.par = list(cell.jitter=1), 
+               mode = "fruchtermanreingold", 
+               node.color = "zone", 
+               node.alpha = 0.75, 
+               node.label = FALSE, 
+               node.size = "degree",
+               node.shape = 19, 
+               palette = "Dark2", 
+               color.legend = "Zone", 
+               # edge.lty = "interaction_lty"
+               ) + 
+  geom_point(aes(color = color)) +
+  # scale_linetype_manual(
+  #   values = c("VNS"="solid", "GS"="dotdash", "RW"="dashed")) + 
+  guides(size = FALSE) + 
+  theme_minimal() + 
+  theme(legend.position = "bottom") + 
+  labs(x = NULL, y = NULL)
+
+# interactions_comb2 %>% 
+#   group_by(sourceTaxon_zone) %>% 
+#   summarise(n_sp = n_distinct(sourceTaxonName2))
+
+
+## try using tidygraph
+library(tidygraph)
+library(ggraph)
+tidy_combined_g <- as_tbl_graph(combined_graph)
+tidy_combined_g %>%
+  ggraph(layout = "kk") + 
+  geom_edge_arc(aes(linetype = interactionTypeName)) + 
+  geom_node_point(aes(colour = zone, size = degree)) +
+  scale_colour_brewer(palette = "Dark2") + 
+  # scale_linetype_manual(name = NULL) + 
+  # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
+  theme_graph() + 
+  theme(legend.position = "bottom")
 
 ## define graph layouts
-circ <- layout_in_circle(combined_graph)
-nice <- layout_nicely(combined_graph)
-fr <- layout.fruchterman.reingold(combined_graph)
-kw <- layout.kamada.kawai(combined_graph)
+circ_c <- layout_in_circle(combined_graph)
+nice_c <- layout_nicely(combined_graph)
+fruc_c <- layout.fruchterman.reingold(combined_graph)
+kama_c <- layout.kamada.kawai(combined_graph)
 
 ## plot the graph
 # color_dict = {"m": "blue", "f": "pink"}
@@ -709,13 +790,77 @@ plot(combined_graph,
      vertex.label = NA,
      vertex.size = igraph::degree(combined_graph, mode = "all") * 0.1, 
      # vertex.color = c("blue", "red", "white"), 
-     layout = kw) # plot as web, remove names
+     layout = kama_c) # plot as web, remove names
+
+V(combined_graph)
+E(combined_graph)
+
+## graph of subtidal
+comb2_sub <- interactions_comb2 %>% 
+  ungroup() %>% 
+  filter(sourceTaxon_zone %in% c("Subtidal", "Both") & 
+           targetTaxon_zone %in% c("Subtidal", "Both"))
+
+sub_graph <- igraph::graph_from_data_frame(comb2_sub)
+
+circ_s <- layout_in_circle(sub_graph)
+nice_s <- layout_nicely(sub_graph)
+fruc_s <- layout.fruchterman.reingold(sub_graph)
+kama_s <- layout.kamada.kawai(sub_graph)
+
+plot(sub_graph, 
+     edge.arrow.size = 0.2, 
+     vertex.label = NA,
+     vertex.size = igraph::degree(sub_graph, mode = "all") * 0.1, 
+     layout = nice_s)
+
+V(sub_graph)
+E(sub_graph)
+
+saveRDS(sub_graph, "data/sub_graph_DB_globi.RDS")
+# sub_graph <- readRDS(, "data/sub_graph_DB_globi.RDS")
+
+## graph of intertidal
+comb2_int <- interactions_comb2 %>% 
+  ungroup() %>% 
+  filter(sourceTaxon_zone %in% c("Intertidal", "Both") & 
+           targetTaxon_zone %in% c("Intertidal", "Both"))
+
+int_graph <- igraph::graph_from_data_frame(comb2_int)
+
+circ_i <- layout_in_circle(int_graph)
+nice_i <- layout_nicely(int_graph)
+fruc_i <- layout.fruchterman.reingold(int_graph)
+kama_i <- layout.kamada.kawai(int_graph)
+
+plot(int_graph, 
+     edge.arrow.size = 0.2, 
+     vertex.label = NA,
+     vertex.size = igraph::degree(int_graph, mode = "all") * 0.1, 
+     layout = nice_i)
+
+V(int_graph)
+E(int_graph)
+
+saveRDS(int_graph, "data/int_graph_DB_globi.RDS")
+# int_graph <- readRDS(, "data/int_graph_DB_globi.RDS")
+
+## combined subtidal and intertidal
+plot(combined_graph, 
+     edge.arrow.size = 0.2, 
+     vertex.label = NA,
+     vertex.size = igraph::degree(combined_graph, mode = "all") * 0.1, 
+     layout = nice_c)
 
 V(combined_graph)
 E(combined_graph)
 
 saveRDS(combined_graph, "data/combined_graph_int_sub_DB_globi.RDS")
 # combined_graph <- readRDS(, "data/combined_graph_int_sub_DB_globi.RDS")
+
+library(ggnetwork)
+
+ggplot(ggnetwork(sub_graph)) + geom_edges()
 
 
 # 3_get_species_by_site.R -------------------------------------------------
