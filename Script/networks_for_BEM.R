@@ -831,9 +831,21 @@ ggsave(filename = "Plots/network_span_2.png", plot = p.span,
 ## found strictly in subtidal or intertidal zones)
 ## intertidal taxa, and vice verse
 interactions_both <- interactions_comb2 %>% 
+  # ## interactions between species that occur in both zones (exclusive)
+  # filter(sourceTaxon_zone %in% c("Both") & 
+  #          targetTaxon_zone %in% c("Both")) %>% 
+  ## interactions involving at least one species found in both zones
   filter(sourceTaxon_zone %in% c("Both") | 
-           targetTaxon_zone %in% c("Both"))
+           targetTaxon_zone %in% c("Both")) 
 nrow(interactions_both) ## [1] 235
+
+## COMMENT:
+## use the & "AND" script version of the subsetting code above to 
+## produce the network involving only species that occur in both zones
+## (but not their other interactions)
+## use the | "OR" script version to produce a network of species species
+## that occur in both zones, as well as their direct interactions with
+## zone-restricted species
 
 ## create a graph combing subtidal and intertidal communities
 both_graph <- igraph::graph_from_data_frame(interactions_both)
@@ -851,11 +863,6 @@ graph_sp_both <- tibble(name = V(both_graph)$name) %>%
             by = c("name" = "organism"))
 V(both_graph)$zone <- graph_sp_both$sp_zone
 
-## add attribute for interaction type (6 possible options)
-unique(interactions_both$interactionTypeName)
-# [1] "preys on"    "eats"        "epibiont of"
-V(both_graph)$interaction_type <- interactions_both$interactionTypeName
-
 ## calculate and add an attribute for degree 
 ## (i.e., how many connections are made to each node?)
 V(both_graph)$degree <- igraph::degree(both_graph, 
@@ -869,6 +876,11 @@ V(both_graph)$weight <- igraph::degree(both_graph,
 ## inspect edge (link) attributes
 # edge_attr(combined_graph)
 edge_attr_names(both_graph)
+
+# ## add attribute for interaction type (6 possible options)
+# unique(interactions_both$interactionTypeName)
+# # [1] "preys on"    "eats"        "epibiont of"
+# V(both_graph)$interaction_type <- interactions_both$interactionTypeName
 
 ## convert the graph into a tidy object using {tidygraph}
 tidy_both_g <- tidygraph::as_tbl_graph(both_graph)
@@ -889,7 +901,7 @@ tidy_both_g %>%
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
   theme_graph() + 
-  guides(size = FALSE, 
+  guides(size = "none", 
          fill = guide_legend("Zone"), 
          linetype = guide_legend(NULL)) + 
   theme(#legend.position = "bottom", 
@@ -913,7 +925,7 @@ layout_both <- create_layout(tidy_both_g,
                        zone == "Both" ~ 
                          rnorm(1, mean = 2, sd = 0.2), 
                        zone == "Intertidal" ~ 
-                         rnorm(1, mean = 2, sd = 0.2))) 
+                         rnorm(1, mean = 3, sd = 0.2))) 
 
 ## recreate the layout and add the previously recalculated x values
 ## NOTE: need to do this because the output above is a tibble, but
@@ -937,13 +949,14 @@ p.both <- layout_both2 %>%
                  colour = "grey30", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
-  scale_fill_manual(values = net_pal[c(1,3)], name = "Zone") +
+  scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") +
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
   theme_graph() + 
-  guides(size = FALSE, fill = guide_legend(order = 1)) + 
-  labs(subtitle = "Network of species found in both zones (and 1") +
+  guides(size = "none", 
+         fill = guide_legend(order = 1)) + 
+  labs(subtitle = "Network of species found in both zones \n(and 1st-degree links)") +
   theme(#legend.position = "bottom", 
     # legend.position = "right", 
     legend.position = "none",
@@ -953,7 +966,4 @@ ggsave(filename = "Plots/network_both_2.png", plot = p.both,
        width = 5, height = 5, units = "in", dpi = "retina")
 
 
-
-
-
-
+# -------------------------------------------------------------------------
