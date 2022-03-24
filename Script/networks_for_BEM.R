@@ -2,6 +2,9 @@
 ## Created by: Joey Burant
 ## Last updated: 22 March 2022
 
+## set a random seed for plotting
+set.seed(4444)
+
 ## load required packages
 library(tidyverse)
 # library(readr)
@@ -19,7 +22,7 @@ library(ggraph)
 ## want these three colour but in a slightly different order
 ## green = subtidal, orange = intertidal, purple = subtidal
 net_pal <- RColorBrewer::brewer.pal("Dark2", n = 3)[c(1,3,2)]
-net_pal <- c("red", "grey50", "blue")
+net_pal <- c("red", "grey40", "blue")
 
 ## load data
 
@@ -91,10 +94,11 @@ tidy_combined_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") +
-  ggraph(layout = "kk") +
+  ggraph(layout = "graphopt") +
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName),
-                 alpha = 0.5, width = 0.5) +
+                 colour = "grey70", alpha = 0.5, width = 0.5) +
+  # scale_fill_manual(values = net_pal[c(2,2,2)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -104,18 +108,18 @@ tidy_combined_g %>%
          fill = guide_legend("Zone"), 
          linetype = guide_legend(NULL)) + 
   theme(#legend.position = "bottom", 
-        legend.position = "right",
-        # legend.position = "none", 
+        # legend.position = "right",
+        legend.position = "none",
         legend.box = "vertical", 
         panel.background = element_blank(), 
         plot.background = element_blank())
 
-ggsave(filename = "Plots/network_combined_1.png", plot = last_plot(), 
+ggsave(filename = "Plots/network_combined_2.png", plot = last_plot(), 
        width = 7, height = 5, units = "in", dpi = "retina")
 
 ## create a layout for the graph
 layout_combined <- create_layout(tidy_combined_g, 
-                                 layout = "kk") %>% 
+                                 layout = "graphopt") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -130,7 +134,7 @@ layout_combined <- create_layout(tidy_combined_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_combined2 <- create_layout(tidy_combined_g, 
-                                  layout = "kk")
+                                  layout = "graphopt")
 ## add specified x and y values (no doing anything with y here)
 layout_combined2$x <- layout_combined$x
 layout_combined2$y <- layout_combined$y
@@ -145,7 +149,7 @@ p.comb <- layout_combined2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey30", alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   scale_fill_manual(values = net_pal, name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") +
@@ -156,13 +160,13 @@ p.comb <- layout_combined2 %>%
          fill = guide_legend(order = 1)) + 
   # labs(subtitle = "Integrated nearshore foodweb at Appledore") + 
   theme(#legend.position = "bottom", 
-        legend.position = "right",
-        # legend.position = "none", 
+        # legend.position = "right",
+        legend.position = "none",
         legend.box = "vertical", 
         panel.background = element_blank(), 
         plot.background = element_blank())
 
-ggsave(filename = "Plots/network_combined_2.png", plot = p.comb, 
+ggsave(filename = "Plots/network_combined_3.png", plot = p.comb, 
        width = 5, height = 5, units = "in", dpi = "retina")
 
 
@@ -273,11 +277,12 @@ tidy_sub_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "kk") +
+  ggraph(layout = "graphopt") +
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 alpha = 0.5, width = 0.5) + 
-  scale_fill_manual(values = net_pal, name = "Zone") + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+  # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
+  scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
@@ -292,12 +297,12 @@ tidy_sub_g %>%
         panel.background = element_blank(), 
         plot.background = element_blank())
 
-ggsave(filename = "Plots/network_subtidal_1.png", plot = last_plot(), 
+ggsave(filename = "Plots/network_subtidal_2.png", plot = last_plot(), 
        width = 5, height = 5, units = "in", dpi = "retina")
 
 ## create a layout for the graph
 layout_sub <- create_layout(tidy_sub_g, 
-                                 layout = "kk") %>% 
+                                 layout = "graphopt") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -310,7 +315,7 @@ layout_sub <- create_layout(tidy_sub_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_sub2 <- create_layout(tidy_sub_g, 
-                                  layout = "kk")
+                                  layout = "graphopt")
 ## add specified x and y values (no doing anything with y here)
 layout_sub2$x <- layout_sub$x
 layout_sub2$y <- layout_sub$y
@@ -325,7 +330,7 @@ p.sub <- layout_sub2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey30", alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
@@ -338,7 +343,9 @@ p.sub <- layout_sub2 %>%
   theme(#legend.position = "bottom", 
         # legend.position = "right", 
         legend.position = "none",
-        legend.box = "vertical")
+        legend.box = "vertical", 
+        panel.background = element_blank(), 
+        plot.background = element_blank())
 
 ggsave(filename = "Plots/network_subtidal_3.png", plot = p.sub, 
        width = 5, height = 5, units = "in", dpi = "retina")
@@ -391,11 +398,12 @@ tidy_int_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "kk") + 
+  ggraph(layout = "graphopt") + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 alpha = 0.5, width = 0.5) + 
-  scale_fill_manual(values = net_pal[2:3], name = "Zone") + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+  # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
+  scale_fill_manual(values = net_pal[2:3], name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
@@ -410,12 +418,12 @@ tidy_int_g %>%
         panel.background = element_blank(), 
         plot.background = element_blank())
 
-ggsave(filename = "Plots/network_intertidal_1.png", plot = last_plot(), 
+ggsave(filename = "Plots/network_intertidal_2.png", plot = last_plot(), 
        width = 5, height = 5, units = "in", dpi = "retina")
 
 ## create a layout for the graph
 layout_int <- create_layout(tidy_int_g, 
-                            layout = "kk") %>% 
+                            layout = "graphopt") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -428,7 +436,7 @@ layout_int <- create_layout(tidy_int_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_int2 <- create_layout(tidy_int_g, 
-                             layout = "kk")
+                             layout = "graphopt")
 ## add specified x and y values (no doing anything with y here)
 layout_int2$x <- layout_int$x
 layout_int2$y <- layout_int$y
@@ -443,7 +451,7 @@ p.int <- layout_int2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey30", alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[2:3], name = "Zone") +
@@ -457,7 +465,9 @@ p.int <- layout_int2 %>%
   theme(#legend.position = "bottom", 
         # legend.position = "right", 
         legend.position = "none",
-        legend.box = "vertical")
+        legend.box = "vertical", 
+        panel.background = element_blank(), 
+        plot.background = element_blank())
 
 ggsave(filename = "Plots/network_intertidal_3.png", plot = p.int, 
        width = 5, height = 5, units = "in", dpi = "retina")
@@ -751,10 +761,10 @@ tidy_span_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "kk") + 
+  ggraph(layout = "graphopt") + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   scale_fill_manual(values = net_pal[c(1,3)], name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -764,8 +774,8 @@ tidy_span_g %>%
          fill = guide_legend("Zone"), 
          linetype = guide_legend(NULL)) + 
   theme(#legend.position = "bottom", 
-    legend.position = "right",
-    # legend.position = "none",
+    # legend.position = "right",
+    legend.position = "none",
     legend.box = "vertical", 
     panel.background = element_blank(), 
     plot.background = element_blank())
@@ -775,7 +785,7 @@ ggsave(filename = "Plots/network_span_1.png", plot = last_plot(),
 
 ## create a layout for the graph
 layout_span <- create_layout(tidy_span_g, 
-                             layout = "kk") %>% 
+                             layout = "graphopt") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -788,7 +798,7 @@ layout_span <- create_layout(tidy_span_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_span2 <- create_layout(tidy_span_g, 
-                              layout = "kk")
+                              layout = "graphopt")
 ## add specified x and y values (no doing anything with y here)
 layout_span2$x <- layout_span$x
 layout_span2$y <- layout_span$y
@@ -803,7 +813,7 @@ p.span <- layout_span2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey30", alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[c(1,3)], name = "Zone") +
@@ -813,11 +823,13 @@ p.span <- layout_span2 %>%
   theme_graph() + 
   guides(size = "none", 
          fill = guide_legend(order = 1)) + 
-  labs(subtitle = "The missing network linking the subtidal and intertidal") +
+  # labs(subtitle = "The missing network linking the subtidal and intertidal") +
   theme(#legend.position = "bottom", 
     # legend.position = "right", 
     legend.position = "none",
-    legend.box = "vertical")
+    legend.box = "vertical", 
+    panel.background = element_blank(), 
+    plot.background = element_blank())
 
 ggsave(filename = "Plots/network_span_2.png", plot = p.span, 
        width = 5, height = 5, units = "in", dpi = "retina")
@@ -835,11 +847,11 @@ ggsave(filename = "Plots/network_span_2.png", plot = p.span,
 ## intertidal taxa, and vice verse
 interactions_both <- interactions_comb2 %>% 
   # ## interactions between species that occur in both zones (exclusive)
-  # filter(sourceTaxon_zone %in% c("Both") & 
-  #          targetTaxon_zone %in% c("Both")) %>% 
+  filter(sourceTaxon_zone %in% c("Both") &
+           targetTaxon_zone %in% c("Both")) #%>%
   ## interactions involving at least one species found in both zones
-  filter(sourceTaxon_zone %in% c("Both") | 
-           targetTaxon_zone %in% c("Both")) 
+  # filter(sourceTaxon_zone %in% c("Both") | 
+  #          targetTaxon_zone %in% c("Both")) 
 nrow(interactions_both) ## [1] 235
 
 ## COMMENT:
@@ -895,10 +907,10 @@ tidy_both_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "kk") + 
+  ggraph(layout = "graphopt") + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   scale_fill_manual(values = net_pal, name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -908,8 +920,8 @@ tidy_both_g %>%
          fill = guide_legend("Zone"), 
          linetype = guide_legend(NULL)) + 
   theme(#legend.position = "bottom", 
-    legend.position = "right",
-    # legend.position = "none",
+    # legend.position = "right",
+    legend.position = "none",
     legend.box = "vertical", 
     panel.background = element_blank(), 
     plot.background = element_blank())
@@ -919,7 +931,7 @@ ggsave(filename = "Plots/network_both_1.png", plot = last_plot(),
 
 ## create a layout for the graph
 layout_both <- create_layout(tidy_both_g, 
-                             layout = "kk") %>% 
+                             layout = "graphopt") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -934,7 +946,7 @@ layout_both <- create_layout(tidy_both_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_both2 <- create_layout(tidy_both_g, 
-                              layout = "kk")
+                              layout = "graphopt")
 ## add specified x and y values (no doing anything with y here)
 layout_both2$x <- layout_both$x
 layout_both2$y <- layout_both$y
@@ -949,7 +961,7 @@ p.both <- layout_both2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey30", alpha = 0.5, width = 0.5) + 
+                 colour = "grey70", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
@@ -959,11 +971,13 @@ p.both <- layout_both2 %>%
   theme_graph() + 
   guides(size = "none", 
          fill = guide_legend(order = 1)) + 
-  labs(subtitle = "Network of species found in both zones \n(and 1st-degree links)") +
+  # labs(subtitle = "Network of species found in both zones \n(and 1st-degree links)") +
   theme(#legend.position = "bottom", 
     # legend.position = "right", 
     legend.position = "none",
-    legend.box = "vertical")
+    legend.box = "vertical", 
+    panel.background = element_blank(), 
+    plot.background = element_blank())
 
 ggsave(filename = "Plots/network_both_2.png", plot = p.both, 
        width = 5, height = 5, units = "in", dpi = "retina")
