@@ -19,6 +19,7 @@ library(ggraph)
 ## want these three colour but in a slightly different order
 ## green = subtidal, orange = intertidal, purple = subtidal
 net_pal <- RColorBrewer::brewer.pal("Dark2", n = 3)[c(1,3,2)]
+net_pal <- c("red", "grey50", "blue")
 
 ## load data
 
@@ -103,8 +104,8 @@ tidy_combined_g %>%
          fill = guide_legend("Zone"), 
          linetype = guide_legend(NULL)) + 
   theme(#legend.position = "bottom", 
-        # legend.position = "right", 
-        legend.position = "none", 
+        legend.position = "right",
+        # legend.position = "none", 
         legend.box = "vertical", 
         panel.background = element_blank(), 
         plot.background = element_blank())
@@ -154,10 +155,12 @@ p.comb <- layout_combined2 %>%
   guides(size = "none", 
          fill = guide_legend(order = 1)) + 
   # labs(subtitle = "Integrated nearshore foodweb at Appledore") + 
-  theme(#legend.position = "right", 
-        # legend.position = "right", 
-        legend.position = "none", 
-        legend.box = "vertical")
+  theme(#legend.position = "bottom", 
+        legend.position = "right",
+        # legend.position = "none", 
+        legend.box = "vertical", 
+        panel.background = element_blank(), 
+        plot.background = element_blank())
 
 ggsave(filename = "Plots/network_combined_2.png", plot = p.comb, 
        width = 5, height = 5, units = "in", dpi = "retina")
