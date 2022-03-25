@@ -17,11 +17,14 @@ library(igraph)
 library(tidygraph)
 library(ggnetwork)
 library(ggraph)
+library(ggforce)
+# library(concaveman)
+library(ggnewscale)
 
 ## set colour palette
 ## want these three colour but in a slightly different order
 ## green = subtidal, orange = intertidal, purple = subtidal
-net_pal <- RColorBrewer::brewer.pal("Dark2", n = 3)[c(1,3,2)]
+# net_pal <- RColorBrewer::brewer.pal("Dark2", n = 3)[c(1,3,2)]
 net_pal <- c("red", "grey40", "blue")
 
 ## load data
@@ -94,10 +97,10 @@ tidy_combined_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") +
-  ggraph(layout = "graphopt") +
+  ggraph(layout = "kk") +
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName),
-                 colour = "grey70", alpha = 0.5, width = 0.5) +
+                 colour = "grey50", alpha = 0.5, width = 0.5) +
   # scale_fill_manual(values = net_pal[c(2,2,2)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
@@ -115,11 +118,11 @@ tidy_combined_g %>%
         plot.background = element_blank())
 
 ggsave(filename = "Plots/network_combined_2.png", plot = last_plot(), 
-       width = 7, height = 5, units = "in", dpi = "retina")
+       width = 5, height = 5, units = "in", dpi = "retina")
 
 ## create a layout for the graph
 layout_combined <- create_layout(tidy_combined_g, 
-                                 layout = "graphopt") %>% 
+                                 layout = "kk") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -134,7 +137,7 @@ layout_combined <- create_layout(tidy_combined_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_combined2 <- create_layout(tidy_combined_g, 
-                                  layout = "graphopt")
+                                  layout = "kk")
 ## add specified x and y values (no doing anything with y here)
 layout_combined2$x <- layout_combined$x
 layout_combined2$y <- layout_combined$y
@@ -149,7 +152,7 @@ p.comb <- layout_combined2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   scale_fill_manual(values = net_pal, name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") +
@@ -277,10 +280,10 @@ tidy_sub_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "graphopt") +
+  ggraph(layout = "kk") +
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
@@ -302,7 +305,7 @@ ggsave(filename = "Plots/network_subtidal_2.png", plot = last_plot(),
 
 ## create a layout for the graph
 layout_sub <- create_layout(tidy_sub_g, 
-                                 layout = "graphopt") %>% 
+                                 layout = "kk") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -315,7 +318,7 @@ layout_sub <- create_layout(tidy_sub_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_sub2 <- create_layout(tidy_sub_g, 
-                                  layout = "graphopt")
+                                  layout = "kk")
 ## add specified x and y values (no doing anything with y here)
 layout_sub2$x <- layout_sub$x
 layout_sub2$y <- layout_sub$y
@@ -330,7 +333,7 @@ p.sub <- layout_sub2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
@@ -398,10 +401,10 @@ tidy_int_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "graphopt") + 
+  ggraph(layout = "kk") + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[2:3], name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
@@ -423,7 +426,7 @@ ggsave(filename = "Plots/network_intertidal_2.png", plot = last_plot(),
 
 ## create a layout for the graph
 layout_int <- create_layout(tidy_int_g, 
-                            layout = "graphopt") %>% 
+                            layout = "kk") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -436,7 +439,7 @@ layout_int <- create_layout(tidy_int_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_int2 <- create_layout(tidy_int_g, 
-                             layout = "graphopt")
+                             layout = "kk")
 ## add specified x and y values (no doing anything with y here)
 layout_int2$x <- layout_int$x
 layout_int2$y <- layout_int$y
@@ -451,7 +454,7 @@ p.int <- layout_int2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[2:3], name = "Zone") +
@@ -520,15 +523,23 @@ n_distinct(V(int_graph)$name) ## [1] 45
 ## node centrality
 tidy_combined_g <- ## combined network
   tidy_combined_g %>% 
-  mutate(centrality = centrality_authority())
+  mutate(centralityA = centrality_authority(), 
+         centralityB = centrality_betweenness(), 
+         centralityE = centrality_eigen())
 
 tidy_sub_g <- ## subtidal network
   tidy_sub_g %>%
-  mutate(centrality = centrality_authority())
+  mutate(centralityA = centrality_authority(), 
+         centralityB = centrality_betweenness(), 
+         centralityE = centrality_eigen())
+
 
 tidy_int_g <- ## intertidal network
   tidy_int_g %>%
-  mutate(centrality = centrality_authority())
+  mutate(centralityA = centrality_authority(), 
+         centralityB = centrality_betweenness(), 
+         centralityE = centrality_eigen())
+
 
 ## assortativity (by zone)
 tidy_combined_g %>% ## combined network
@@ -652,46 +663,46 @@ as_tibble(tidy_int_g) %>%
 tidy_combined_g %>% ## combined network 
   as_tibble() %>% 
   # group_by(zone) %>% 
-  summarise(median = median(centrality), 
-            mean_deg = mean(centrality), 
-            sd_deg = sd(centrality), 
-            min = min(centrality), 
-            max = max(centrality))
-# median mean_deg sd_deg   min   max
-#  0.162    0.231  0.206     0     1
+  summarise(median = median(centralityE), 
+            mean_deg = mean(centralityE), 
+            sd_deg = sd(centralityE), 
+            min = min(centralityE), 
+            max = max(centralityE))
+#   median mean_deg sd_deg     min   max
+# 1  0.159    0.204  0.191 0.00210     1
 
 as_tibble(tidy_combined_g) %>% 
-  qplot(x = centrality, geom = "histogram", data = .) + 
+  qplot(x = centralityE, geom = "histogram", data = .) + 
   ggtitle("node centrality - combined network")
 
 tidy_sub_g %>% ## subtidal network 
-  as.tibble() %>% 
+  as_tibble() %>% 
   # group_by(zone) %>% 
-  summarise(median = median(centrality), 
-            mean_deg = mean(centrality), 
-            sd_deg = sd(centrality), 
-            min = min(centrality), 
-            max = max(centrality))
-# median mean_deg sd_deg   min   max
-#  0.152    0.199  0.196     0     1
+  summarise(median = median(centralityE), 
+            mean_deg = mean(centralityE), 
+            sd_deg = sd(centralityE), 
+            min = min(centralityE), 
+            max = max(centralityE))
+#   median mean_deg sd_deg     min   max
+# 1  0.130    0.215  0.221 0.00320     1
 
 as_tibble(tidy_sub_g) %>% 
-  qplot(x = centrality, geom = "histogram", data = .) + 
+  qplot(x = centralityE, geom = "histogram", data = .) + 
   ggtitle("node centrality - subtidal network")
 
 tidy_int_g %>% ## combined network 
-  as.tibble() %>% 
+  as_tibble() %>% 
   # group_by(zone) %>% 
-  summarise(median = median(centrality), 
-            mean_deg = mean(centrality), 
-            sd_deg = sd(centrality), 
-            min = min(centrality), 
-            max = max(centrality))
-# median mean_deg sd_deg   min   max
-#  0.255    0.342  0.292     0     1
+  summarise(median = median(centralityE), 
+            mean_deg = mean(centralityE), 
+            sd_deg = sd(centralityE), 
+            min = min(centralityE), 
+            max = max(centralityE))
+#   median mean_deg sd_deg     min   max
+# 1  0.241    0.302  0.249 0.00921     1
 
 as_tibble(tidy_int_g) %>% 
-  qplot(x = centrality, geom = "histogram", data = .) + 
+  qplot(x = centralityE, geom = "histogram", data = .) + 
   ggtitle("node centrality - intertidal network")
 
 
@@ -761,10 +772,10 @@ tidy_span_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "graphopt") + 
+  ggraph(layout = "kk") + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   scale_fill_manual(values = net_pal[c(1,3)], name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -785,7 +796,7 @@ ggsave(filename = "Plots/network_span_1.png", plot = last_plot(),
 
 ## create a layout for the graph
 layout_span <- create_layout(tidy_span_g, 
-                             layout = "graphopt") %>% 
+                             layout = "kk") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -798,7 +809,7 @@ layout_span <- create_layout(tidy_span_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_span2 <- create_layout(tidy_span_g, 
-                              layout = "graphopt")
+                              layout = "kk")
 ## add specified x and y values (no doing anything with y here)
 layout_span2$x <- layout_span$x
 layout_span2$y <- layout_span$y
@@ -813,7 +824,7 @@ p.span <- layout_span2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[c(1,3)], name = "Zone") +
@@ -847,12 +858,12 @@ ggsave(filename = "Plots/network_span_2.png", plot = p.span,
 ## intertidal taxa, and vice verse
 interactions_both <- interactions_comb2 %>% 
   # ## interactions between species that occur in both zones (exclusive)
-  filter(sourceTaxon_zone %in% c("Both") &
-           targetTaxon_zone %in% c("Both")) #%>%
+  # filter(sourceTaxon_zone %in% c("Both") &
+  #          targetTaxon_zone %in% c("Both"))
   ## interactions involving at least one species found in both zones
-  # filter(sourceTaxon_zone %in% c("Both") | 
-  #          targetTaxon_zone %in% c("Both")) 
-nrow(interactions_both) ## [1] 235
+  filter(sourceTaxon_zone %in% c("Both") |
+           targetTaxon_zone %in% c("Both"))
+nrow(interactions_both) ## [1] 235 ## [1] 36
 
 ## COMMENT:
 ## use the & "AND" script version of the subsetting code above to 
@@ -907,10 +918,10 @@ tidy_both_g %>%
                        levels = c("Subtidal", "Both", "Intertidal"))) %>% 
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
-  ggraph(layout = "graphopt") + 
+  ggraph(layout = "kk") + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   scale_fill_manual(values = net_pal, name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -931,7 +942,7 @@ ggsave(filename = "Plots/network_both_1.png", plot = last_plot(),
 
 ## create a layout for the graph
 layout_both <- create_layout(tidy_both_g, 
-                             layout = "graphopt") %>% 
+                             layout = "kk") %>% 
   rowwise() %>% 
   ## change x-axis values from layout so that 
   ## species are arranged/grouped by the zone they occupy
@@ -946,7 +957,7 @@ layout_both <- create_layout(tidy_both_g,
 ## NOTE: need to do this because the output above is a tibble, but
 ## we need the layout to be of class: "layout_tbl_graph"
 layout_both2 <- create_layout(tidy_both_g, 
-                              layout = "graphopt")
+                              layout = "kk")
 ## add specified x and y values (no doing anything with y here)
 layout_both2$x <- layout_both$x
 layout_both2$y <- layout_both$y
@@ -961,7 +972,7 @@ p.both <- layout_both2 %>%
   # geom_edge_hive(aes(linetype = interactionTypeName),
   #                colour = "grey30", alpha = 0.5, width = 0.5) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey70", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
   geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
@@ -983,4 +994,308 @@ ggsave(filename = "Plots/network_both_2.png", plot = p.both,
        width = 5, height = 5, units = "in", dpi = "retina")
 
 
+# key players in the networks ---------------------------------------------
+
+## look at eigen centrality and degree (related but not the same thing)
+## use top 5 species as examples
+## combined
+as_tibble(tidy_combined_g) %>% 
+  select(name, zone, centralityE) %>% 
+  arrange(desc(centralityE)) #%>% 
+  # mutate(x = 1:nrow(.)) %>% 
+  # ggplot() + 
+  # geom_point(aes(x = x, y = centralityB))
+## COMMENT: 7 species with centrality > 0.50
+#  name                              zone       centralityE
+# 1 Strongylocentrotus droebachiensis Both             1    
+# 2 Cancer irroratus                  Subtidal         0.783
+# 3 Homarus americanus                Subtidal         0.765
+# 4 Carcinus maenas                   Both             0.635
+# 5 Mytilus edulis                    Both             0.572
+
+as_tibble(tidy_combined_g) %>% 
+  select(name, zone, degree) %>% 
+  arrange(desc(degree))
+## COMMENT: 17 species with degree > 20
+# name                              zone       degree
+# 1 Strongylocentrotus droebachiensis Both           72
+# 2 Carcinus maenas                   Both           43
+# 3 Homarus americanus                Subtidal       40
+# 4 Cancer irroratus                  Subtidal       39
+# 5 Littorina littorea                Intertidal     37
+
+## subtidal
+as_tibble(tidy_sub_g) %>% 
+  select(name, zone, centralityE) %>% 
+  arrange(desc(centralityE))
+## COMMENT: 9 species with centrality > 0.50
+#   name                              zone     centralityE
+# 1 Strongylocentrotus droebachiensis Both           1    
+# 2 Cancer irroratus                  Subtidal       0.859
+# 3 Homarus americanus                Subtidal       0.824
+# 4 Myoxocephalus                     Subtidal       0.674
+# 5 Mytilus edulis                    Both           0.643
+
+as_tibble(tidy_sub_g) %>% 
+  select(name, zone, degree) %>% 
+  arrange(desc(degree))
+## COMMENT: 7 species with degree > 20
+#   name                              zone     degree
+# 1 Strongylocentrotus droebachiensis Both         61
+# 2 Cancer irroratus                  Subtidal     31
+# 3 Homarus americanus                Subtidal     31
+# 4 Carcinus maenas                   Both         28
+# 5 Mytilus edulis                    Both         25
+
+## intertidal
+as_tibble(tidy_int_g) %>% 
+  select(name, zone, centralityE) %>% 
+  arrange(desc(centralityE))
+## COMMENT: 9 species with centrality > 0.50
+#   name                              zone       centralityE
+# 1 Carcinus maenas                   Both             1    
+# 2 Littorina littorea                Intertidal       0.825
+# 3 Nucella lapillus                  Intertidal       0.815
+# 4 Strongylocentrotus droebachiensis Both             0.751
+# 5 Ascophyllum nodosum               Both             0.563
+
+as_tibble(tidy_int_g) %>% 
+  select(name, zone, degree) %>% 
+  arrange(desc(degree))
+## COMMENT: 4 species with degree > 20
+#   name                              zone       degree
+# 1 Carcinus maenas                   Both           30
+# 2 Strongylocentrotus droebachiensis Both           25
+# 3 Littorina littorea                Intertidal     23
+# 4 Nucella lapillus                  Intertidal     23
+# 5 Hemigrapsus sanguineus            Intertidal     16
+
+## span
+tidy_span_g <- tidy_span_g %>%
+  mutate(centralityA = centrality_authority(), 
+         centralityB = centrality_betweenness(), 
+         centralityE = centrality_eigen())
+
+as_tibble(tidy_span_g) %>% 
+  select(name, zone, centralityE) %>% 
+  arrange(desc(centralityE))
+## COMMENT: 11 species with centrality > 0.50
+#  name                   zone       centralityE
+# 1 Lacuna vincta          Intertidal       1    
+# 2 Littorina littorea     Intertidal       0.888
+# 3 Saccharina latissima   Subtidal         0.871
+# 4 Littorina obtusata     Intertidal       0.810
+# 5 Ulvaria                Subtidal         0.679
+
+as_tibble(tidy_span_g) %>% 
+  select(name, zone, degree) %>% 
+  arrange(desc(degree))
+## COMMENT: 8 species with degree > 10 
+#  name                   zone       degree
+# 1 Lacuna vincta          Intertidal     19
+# 2 Littorina littorea     Intertidal     14
+# 3 Semibalanus balanoides Intertidal     13
+# 4 Littorina saxatilis    Intertidal     12
+# 5 Isopods                Intertidal     12
+
+## both
+tidy_both_g <- tidy_both_g %>%
+  mutate(centralityA = centrality_authority(), 
+         centralityB = centrality_betweenness(), 
+         centralityE = centrality_eigen())
+
+as_tibble(tidy_both_g) %>% 
+  select(name, zone, centralityE) %>% 
+  arrange(desc(centralityE))
+## COMMENT: 2 species with centrality > 0.49
+#   name                              zone       centralityE
+# 1 Strongylocentrotus droebachiensis Both             1    
+# 2 Carcinus maenas                   Both             0.514
+# 3 Mytilus edulis                    Both             0.491
+# 4 Homarus americanus                Subtidal         0.386
+# 5 Ulvaria                           Subtidal         0.278
+
+as_tibble(tidy_both_g) %>% 
+  select(name, zone, degree) %>% 
+  arrange(desc(degree))
+## COMMENT: 3 species with degree > 20
+#   name                              zone       degree
+# 1 Strongylocentrotus droebachiensis Both           72
+# 2 Carcinus maenas                   Both           43
+# 3 Mytilus edulis                    Both           28
+# 4 Amphipoda                         Both           18
+# 5 Testudinalia testudinalis         Both           15
+
+
 # -------------------------------------------------------------------------
+
+
+a <- sort(as_tibble(tidy_both_g)$name)
+b <- sort(filter(as_tibble(tidy_combined_g), zone == "Both")$name)
+
+
+
+# modularity analysis -----------------------------------------------------
+
+tidy_combined_g %>%
+  to_undirected() %>%
+  mutate(modularity = graph_modularity(group=as.factor(zone))) %>%
+  pull(modularity) %>%
+  head(1) ## [1] 0.03039753
+
+tidy_combined_g2 <- tidy_combined_g %>% 
+  to_undirected() %>% 
+  mutate(group = group_leading_eigen()) 
+
+tidy_combined_g2 %>% 
+  mutate(modularity = graph_modularity(group=as.factor(group))) %>% 
+  pull(modularity) %>% 
+  head(1) ## [1] 0.2974819
+
+
+## plot modularity figures
+
+## create network layout (note: different from one used above)
+layout_fr <- layout_with_gem(tidy_combined_g2)
+
+
+## add edge columns indicating whether edges are moving into
+## or out of a module (to be used to colour edges in plots)
+
+## easy to do for zone-based modules
+tidy_combined_g2 <- tidy_combined_g2 %>% 
+  activate(edges) %>% 
+  mutate(edge_dir1 = ifelse(sourceTaxon_zone == targetTaxon_zone, 
+                            "in", "out"))
+
+## a bit more complicated for optimized modules
+t <- tidy_combined_g2 %>% 
+  activate(nodes) %>% 
+  as_tibble() %>% 
+  select(group) %>%
+  mutate(row = row_number())
+
+tidy_combined_g2 <- tidy_combined_g2 %>% 
+  activate(edges) %>% 
+  left_join(., t, by = c("from" = "row")) %>% 
+  rename(group_from = group) %>% 
+  left_join(., t, by = c("to" = "row")) %>% 
+  rename(group_to = group) %>% 
+  mutate(edge_dir2 =  ifelse(group_from == group_to, 
+                             "in", "out"))
+
+
+## plot modularity by zone
+tidy_combined_g2 %>% 
+  activate(nodes) %>% 
+  mutate(zone = factor(zone, 
+                       levels = c("Subtidal", 
+                                  "Both", "Intertidal"))) %>% 
+  ggraph(., layout = layout_fr) + 
+  geom_mark_hull(mapping = aes(x = as.data.frame(layout_fr)[,1],
+                               y = as.data.frame(layout_fr)[,2],
+                               colour = as.factor(zone),
+                               fill = as.factor(zone))) +
+  guides(fill = guide_legend(title = "Zone"), 
+         colour = guide_legend(title = "Zone")) + 
+  scale_fill_manual(values = net_pal, name = "Zone") + 
+  scale_colour_manual(values = net_pal, name = "Zone") + 
+  geom_edge_link(mapping = aes(#linetype = interactionTypeName, 
+    colour = edge_dir2), 
+    end_cap = circle(.2, "cm"), 
+    arrow = arrow(type = "closed", 
+                  ends = "last", 
+                  length = unit(1, "mm"))) + 
+  scale_edge_colour_manual(values = c("grey50", "black"), 
+                           name = "Direction") + 
+  new_scale_fill() + 
+  geom_node_point(mapping = aes(fill = as.factor(zone), 
+                                size = weight), 
+                  shape = 21) + 
+  scale_fill_manual(values = net_pal, name = "Zone") + 
+  # scale_edge_width(range = c(0.2, 1.5), guide = "none") +
+  # scale_size_continuous("Degree", range =  c(2, 10)) +
+  # scale_fill_discrete("Media Type") +
+  # scale_colour_discrete("Community") +
+  guides(size = "none") + 
+  theme_graph() + 
+  theme(legend.position = "none", 
+        legend.box = "vertical", 
+        plot.background = element_blank(), 
+        panel.background = element_blank())
+
+ggsave(filename = "Plots/modularity_imposed_habitats.png", plot = last_plot(), 
+       width = 8, height = 8, units = "in", dpi = "retina")
+
+## modularity by eigenvector grouping
+# greens_pal <- RColorBrewer::brewer.pal("Greens", n=5)[2:5]
+tidy_combined_g2 %>% 
+  activate(nodes) %>% 
+  mutate(zone = factor(zone, 
+                       levels = c("Subtidal", 
+                                  "Both", "Intertidal"))) %>% 
+  ggraph(., layout = layout_fr) + 
+  geom_mark_hull(mapping = aes(x = as.data.frame(layout_fr)[,1],
+                               y = as.data.frame(layout_fr)[,2],
+                               colour = as.factor(group),
+                               fill = as.factor(group))) +
+  guides(fill = guide_legend(title = "Group"), 
+         colour = guide_legend(title = "Group")) + 
+  geom_edge_link(mapping = aes(#linetype = interactionTypeName, 
+                               colour = edge_dir2), 
+                 end_cap = circle(.2, "cm"), 
+                 arrow = arrow(type = "closed", 
+                               ends = "last", 
+                               length = unit(1, "mm"))) + 
+  scale_edge_colour_manual(values = c("grey50", "black"), 
+                      name = "Direction") + 
+  new_scale_fill() + 
+  geom_node_point(mapping = aes(fill = as.factor(zone), 
+                                size = weight), 
+                  shape = 21) + 
+  scale_fill_manual(values = net_pal, name = "Zone") + 
+  # scale_edge_width(range = c(0.2, 1.5), guide = "none") +
+  # scale_size_continuous("Degree", range =  c(2, 10)) +
+  # scale_fill_discrete("Media Type") +
+  # scale_colour_discrete("Community") +
+  guides(size = "none") + 
+  theme_graph() + 
+  theme(legend.position = "none", 
+        legend.box = "vertical", 
+        plot.background = element_blank(), 
+        panel.background = element_blank())
+
+ggsave(filename = "Plots/modularity_optimized.png", plot = last_plot(), 
+       width = 8, height = 8, units = "in", dpi = "retina")
+
+tidy_combined_g2 %>% 
+  activate(nodes) %>% 
+  as_tibble() %>% 
+  mutate(zone = factor(zone, 
+                       levels = c("Subtidal", 
+                                  "Both", "Intertidal"))) %>% 
+  ggplot(data = ., 
+         mapping = aes(x = group)) + 
+  annotate("rect", xmin=-Inf, xmax=1.5, ymin=-Inf, ymax=Inf, 
+           fill = "#F8766D", alpha = 0.4) +
+  annotate("rect", xmin = 1.5, xmax = 2.5, ymin = -Inf, ymax = Inf, 
+           fill = "#7CAE00", alpha = 0.4) +
+  annotate("rect", xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, 
+           fill = "#00BFC4", alpha = 0.4) + 
+  annotate("rect", xmin = 3.5, xmax = Inf, ymin = -Inf, ymax = Inf, 
+           fill = "#C77CFF", alpha = 0.4) + 
+  scale_y_continuous(limits = c(0, 40), expand = c(0, 0)) + 
+  new_scale_fill() + 
+  geom_bar(mapping = aes(fill = zone), colour = "black") + 
+  scale_fill_manual(values = net_pal, name = "Zone") + 
+  labs(x = "Group", y = "Count") + 
+  theme_classic() + 
+  theme(legend.position = c(0.85, 0.8), 
+        plot.background = element_blank(), 
+        panel.background = element_blank(), 
+        legend.background = element_blank())
+
+
+ggsave(filename = "Plots/habitat_by_optimized_module.png", plot = last_plot(), 
+       width = 5, height = 5, units = "in", dpi = "retina")
+
