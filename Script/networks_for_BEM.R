@@ -287,7 +287,7 @@ tidy_sub_g %>%
   # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
-  # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
+  # geom_node_text(aes(label = name), colour = 'grey50', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
   theme_graph() + 
   guides(size = "none", 
@@ -338,7 +338,7 @@ p.sub <- layout_sub2 %>%
   # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") +
-  # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
+  # geom_node_text(aes(label = name), colour = 'grey50', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
   theme_graph() + 
   guides(size = "none") + 
@@ -459,7 +459,7 @@ p.int <- layout_int2 %>%
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[2:3], name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") +
-  # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
+  geom_node_text(aes(label = name), colour = 'grey50', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
   theme_graph() + 
   guides(size = "none", 
@@ -1299,3 +1299,9 @@ tidy_combined_g2 %>%
 ggsave(filename = "Plots/habitat_by_optimized_module.png", plot = last_plot(), 
        width = 5, height = 5, units = "in", dpi = "retina")
 
+
+
+as_tibble(tidy_int_g) %>% 
+  arrange(desc(degree)) %>% print(n=20)
+  summarise(mean = mean(degree), 
+            sd = sd(degree))
