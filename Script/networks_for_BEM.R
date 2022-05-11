@@ -49,6 +49,61 @@ interactions_comb2 <- interactions_comb2 %>%
 sp_zone2 <- readRDS("data/species_list_by_zone2.RDS")
 nrow(sp_zone2) ## [1] 165
 
+# remove duplicate interactions -------------------------------------------
+
+## how many pairwise interactions have multiple records?
+interactions_comb2 %>% 
+  group_by(sourceTaxonName2, targetTaxonName2) %>% 
+  tally() %>% 
+  # arrange(desc(n)) %>% 
+  ungroup() %>% 
+  count(n)
+#       n    nn
+# 1     1   356
+# 2     2    96
+
+## add a column indicating the number of records per pair of interactors
+## (we want only 1, but many will have 2 because of duplication between
+## the literature search and Globi)
+interactions_comb2 <- interactions_comb2 %>% 
+  group_by(sourceTaxonName2, targetTaxonName2) %>% 
+  mutate(n_obs = n())
+
+## pull out interactions with multiple records
+dups <- interactions_comb2 %>% 
+  filter(n_obs == 2)
+
+dups %>% 
+  ungroup() %>% 
+  count(interactionTypeName)
+#   interactionTypeName     n
+# 1 eats                   96
+# 2 preys on               96
+
+## check each interaction to determine whether it should be "eats" or 
+## "preys on" -- (almost) all should be "preys on", I think!
+## Note: this doesn't really matter for our purposes, but may be important
+## for consistency with Globi later...
+dups %>% 
+  select(sourceTaxonName2, targetTaxonName2, interactionTypeName, 
+         sourceTaxon_zone, targetTaxon_zone) %>% 
+  View()
+
+## COMMENT: STILL NEED TO DO THE INSPECTION STEP ABOVE
+## for now, let's just keep all the "preys on" records
+
+## exclude all "eats" interactions
+dups <- dups %>% filter(interactionTypeName == "preys on")
+
+## join filtered duplicates back with the other interaction data
+interactions_comb2 <- interactions_comb2 %>% 
+  filter(n_obs == 1) %>% 
+  bind_rows(., dups)
+
+## save this cleaned version of dataset 
+write_csv(interactions_comb2, 
+          "data/combined_litsearch_globi_interactions2_sans_duplicates.csv")
+
 
 # combined interaction network --------------------------------------------
 
@@ -1300,8 +1355,9 @@ ggsave(filename = "Plots/habitat_by_optimized_module.png", plot = last_plot(),
        width = 5, height = 5, units = "in", dpi = "retina")
 
 
-
 as_tibble(tidy_int_g) %>% 
   arrange(desc(degree)) %>% print(n=20)
   summarise(mean = mean(degree), 
             sd = sd(degree))
+
+
