@@ -268,7 +268,7 @@ interactions_comb2 %>%
 # 8 Subtidal         Intertidal          83
 # 9 Subtidal         Subtidal           112
 
-## COMMENT: 
+## COMMENTS: 
 ## How many subtidal/both interactions should there be?
 ## Both+Both + Both+Subtidal + Subtidal+Both + Subtidal+Subtidal
 # 36 + 49 + 80 + 126 ## [1] 291 <--- nrow(interactions_sub) below
@@ -276,7 +276,7 @@ interactions_comb2 %>%
 ## from 13 July 2022
 30 + 37 + 75 + 112 ## [1] 254 <--- nrow(interactions_sub) below
 254 / nrow(interactions_comb2) ## [1] 52.5% of interactions set
-##
+
 ## How many intertidal/both interactions should there be?
 ## Both+Both + Both+Intertidal + Intertidal+Both + Intertidal+Intertidal
 # 36 + 31 + 39 + 53 ## [1] 159 <--- nrow(interactions_int) below
@@ -294,8 +294,8 @@ interactions_comb2 %>%
 
 ## How many interactions span the subtidal and intertidal?
 ## Intertidal+Subtidal + Subtidal+Intertidal
-53 + 81 ## [1] 134 
-134 / 548 ## [1] 24% of interactions set
+# 53 + 81 ## [1] 134 
+# 134 / 548 ## [1] 24% of interactions set
 ## from 13 July 2022
 45 + 83 ## [1] 128 <-- nrow(interactions_span) below
 128 / nrow(interactions_comb2) ## [1] 26.5% of interactions set
