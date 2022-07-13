@@ -1,6 +1,9 @@
 ## networks for BEM presentation
 ## Created by: Joey Burant
-## Last updated: 22 March 2022
+## Last updated: 13 July 2022
+
+## This script imports files that are created by the 
+## script "networks_for_BEM_data_import.R"
 
 ## set a random seed for plotting
 set.seed(4444)
@@ -35,9 +38,9 @@ net_pal <- c("red", "grey40", "blue")
 ## interactions database (combined literature and GLOBI data)
 interactions_comb2 <- read_csv(
   "data/combined_litsearch_globi_interactions2.csv")
-nrow(interactions_comb2) ## [1] 550
+nrow(interactions_comb2) ## [1] 550 ## [1] 578
 
-## combined all epibiont/epiphyte interactions into one group
+## combine all epibiont/epiphyte interactions into one group
 ## remove one parasitic interaction and one 'visitor' (?)
 interactions_comb2 <- interactions_comb2 %>% 
   mutate(interactionTypeName = ifelse(
@@ -58,9 +61,16 @@ interactions_comb2 %>%
   # arrange(desc(n)) %>% 
   ungroup() %>% 
   count(n)
+
+## from 22 March 2022
 #       n    nn
 # 1     1   356
 # 2     2    96
+
+## from 13 July 2022
+#       n    nn
+# 1     1   390
+# 2     2    93
 
 ## add a column indicating the number of records per pair of interactors
 ## (we want only 1, but many will have 2 because of duplication between
@@ -76,9 +86,16 @@ dups <- interactions_comb2 %>%
 dups %>% 
   ungroup() %>% 
   count(interactionTypeName)
+
+## from 22 March 2022
 #   interactionTypeName     n
 # 1 eats                   96
 # 2 preys on               96
+
+## from 13 July 2022
+#   interactionTypeName     n
+# 1 eats                   93
+# 2 preys on               93
 
 ## check each interaction to determine whether it should be "eats" or 
 ## "preys on" -- (almost) all should be "preys on", I think!
@@ -99,6 +116,7 @@ dups <- dups %>% filter(interactionTypeName == "preys on")
 interactions_comb2 <- interactions_comb2 %>% 
   filter(n_obs == 1) %>% 
   bind_rows(., dups)
+nrow(interactions_comb2) ## [1] 453 ## [1] 483
 
 ## save this cleaned version of dataset 
 write_csv(interactions_comb2, 
@@ -106,6 +124,10 @@ write_csv(interactions_comb2,
 
 
 # combined interaction network --------------------------------------------
+
+## read in filtered combined data
+interactions_comb2 <- read_csv(
+  "data/combined_litsearch_globi_interactions2_sans_duplicates.csv")
 
 ## create a graph combing subtidal and intertidal communities
 combined_graph <- igraph::graph_from_data_frame(interactions_comb2)
@@ -153,9 +175,9 @@ tidy_combined_g %>%
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") +
   ggraph(layout = "kk") +
-  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName),
-                 colour = "grey50", alpha = 0.5, width = 0.5) +
+                 colour = "grey50", alpha = 0.5, width = 0.5) + 
+  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(2,2,2)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
@@ -234,37 +256,50 @@ ggsave(filename = "Plots/network_combined_3.png", plot = p.comb,
 interactions_comb2 %>% 
   group_by(sourceTaxon_zone, targetTaxon_zone) %>% 
   count()
+## from 13 July 2022
 #   sourceTaxon_zone targetTaxon_zone     n
-# 1 Both             Both                36
-# 2 Both             Intertidal          31
-# 3 Both             Subtidal            49
-# 4 Intertidal       Both                39
-# 5 Intertidal       Intertidal          53
-# 6 Intertidal       Subtidal            53
-# 7 Subtidal         Both                80
-# 8 Subtidal         Intertidal          81
-# 9 Subtidal         Subtidal           126
+# 1 Both             Both                30
+# 2 Both             Intertidal          26
+# 3 Both             Subtidal            37
+# 4 Intertidal       Both                31
+# 5 Intertidal       Intertidal          44
+# 6 Intertidal       Subtidal            45
+# 7 Subtidal         Both                75
+# 8 Subtidal         Intertidal          83
+# 9 Subtidal         Subtidal           112
 
 ## COMMENT: 
 ## How many subtidal/both interactions should there be?
 ## Both+Both + Both+Subtidal + Subtidal+Both + Subtidal+Subtidal
-36 + 49 + 80 + 126 ## [1] 291 <--- nrow(interactions_sub) below
-291 / 548 ## [1] 53% of interactions set
+# 36 + 49 + 80 + 126 ## [1] 291 <--- nrow(interactions_sub) below
+# 291 / 548 ## [1] 53% of interactions set
+## from 13 July 2022
+30 + 37 + 75 + 112 ## [1] 254 <--- nrow(interactions_sub) below
+254 / nrow(interactions_comb2) ## [1] 52.5% of interactions set
 ##
 ## How many intertidal/both interactions should there be?
 ## Both+Both + Both+Intertidal + Intertidal+Both + Intertidal+Intertidal
-36 + 31 + 39 + 53 ## [1] 159 <--- nrow(interactions_int) below
-159 / 548 ## [1] 29% of interactions set
+# 36 + 31 + 39 + 53 ## [1] 159 <--- nrow(interactions_int) below
+# 159 / 548 ## [1] 29% of interactions set
+## from 13 July 2022
+30 + 26 + 31 + 44 ## [1] 131 <--- nrow(interactions_int) below
+131 / nrow(interactions_comb2) ## [1] 27.1% of interactions set
 
 ## How many interaction occur between species found in both zones?
 ## Include their first-degree interactions with species in either zone.
 ## Both+Both + Both+Subtidal + Both+Intertidal + Subtidal+Both + Intertidal+Both
-36 + 49 + 31 + 80 + 39 ## [1] 235
-##
+# 36 + 49 + 31 + 80 + 39 ## [1] 235
+## from 13 July 2022
+30 + 37 + 26 + 75 + 31 ## [1] 199
+
 ## How many interactions span the subtidal and intertidal?
 ## Intertidal+Subtidal + Subtidal+Intertidal
 53 + 81 ## [1] 134 
 134 / 548 ## [1] 24% of interactions set
+## from 13 July 2022
+45 + 83 ## [1] 128 <-- nrow(interactions_span) below
+128 / nrow(interactions_comb2) ## [1] 26.5% of interactions set
+
 ## ^^ this is the percentage missed when you treat the subtidal
 ## and intertidal as separate networks! many of these interactions
 ## are likely missed in the observational data because of they involve
@@ -279,14 +314,14 @@ interactions_comb2 %>%
 interactions_sub <- interactions_comb2 %>% 
   filter(sourceTaxon_zone %in% c("Subtidal", "Both") & 
            targetTaxon_zone %in% c("Subtidal", "Both"))
-nrow(interactions_sub) ## [1] 291
+nrow(interactions_sub) ## [1] 291 ## [1] 254
 
 ## subset the interaction to include only those that occur between 
 ## species found in the intertidal (or both)
 interactions_int <- interactions_comb2 %>% 
   filter(sourceTaxon_zone %in% c("Intertidal", "Both") & 
            targetTaxon_zone %in% c("Intertidal", "Both"))
-nrow(interactions_int) ## [1] 159
+nrow(interactions_int) ## [1] 159 ## [1] 131
 
 # subtidal interaction network --------------------------------------------
 
@@ -336,9 +371,9 @@ tidy_sub_g %>%
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
   ggraph(layout = "kk") +
-  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
                  colour = "grey50", alpha = 0.5, width = 0.5) + 
+  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(1,1)], name = "Zone") +
   scale_fill_manual(values = net_pal, name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
@@ -457,9 +492,9 @@ tidy_int_g %>%
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
   ggraph(layout = "kk") + 
-  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey50", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) +  
+  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[2:3], name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
@@ -514,7 +549,7 @@ p.int <- layout_int2 %>%
   # scale_fill_manual(values = net_pal[c(3,3)], name = "Zone") +
   scale_fill_manual(values = net_pal[2:3], name = "Zone") +
   # scale_fill_brewer(palette = "Dark2", name = "Zone") +
-  geom_node_text(aes(label = name), colour = 'grey50', vjust = 0.4) +
+  # geom_node_text(aes(label = name), colour = 'grey50', vjust = 0.4) +
   scale_edge_linetype(name = "Interaction\ntype") + 
   theme_graph() + 
   guides(size = "none", 
@@ -600,17 +635,17 @@ tidy_int_g <- ## intertidal network
 tidy_combined_g %>% ## combined network
   mutate(assortativity = graph_assortativity(attr = zone)) %>% 
   pull(assortativity) %>% 
-  head(1) ## [1] 0.05430575
+  head(1) ## [1] 0.05430575 ## [1] 0.0430284
 
 tidy_sub_g %>% ## subtidal network
   mutate(assortativity = graph_assortativity(attr = zone)) %>% 
   pull(assortativity) %>% 
-  head(1) ## [1] 0.03177633
+  head(1) ## [1] 0.03177633 ## [1] 0.039503
 
 tidy_int_g %>% ## intertidal network
   mutate(assortativity = graph_assortativity(attr = zone)) %>% 
   pull(assortativity) %>% 
-  head(1) ## [1] 0.11159
+  head(1) ## [1] 0.11159 ## [1] 0.1210124
 
 ## community detection with Louvain algorithm
 ## ONLY WORKS FOR UNDIRECTED GRAPHS
@@ -649,24 +684,28 @@ tidy_int_g %>%
   theme_graph()
 
 ## density = proportion of possible connections that exist
-edge_density(combined_graph) ## [1] 0.05425743
-edge_density(sub_graph) ## [1] 0.05855131
-edge_density(int_graph) ## [1] 0.08030303
+## is this also called connectance????
+edge_density(combined_graph) ## [1] 0.05425743 # [1] 0.04782178
+edge_density(sub_graph)      ## [1] 0.05855131 ## [1] 0.05110664
+edge_density(int_graph)      ## [1] 0.08030303 ## [1] 0.06616162
 
 ## diameter = longest shortest path across the network
-with_graph(tidy_combined_g, graph_diameter()) ## [1] 8
-with_graph(tidy_sub_g, graph_diameter()) ## [1] 9
-with_graph(tidy_int_g, graph_diameter()) ## [1] 4
+with_graph(tidy_combined_g, graph_diameter()) ## [1] 8 ## [1] 7
+with_graph(tidy_sub_g, graph_diameter())      ## [1] 9 ## [1] 6
+with_graph(tidy_int_g, graph_diameter())      ## [1] 4 ## [1] 4
 
 ## mean distance between two nodes
-with_graph(tidy_combined_g, graph_mean_dist()) ## [1] 2.437579
-with_graph(tidy_sub_g, graph_mean_dist()) ## [1] 2.368
-with_graph(tidy_int_g, graph_mean_dist()) ## [1] 1.626506
+with_graph(tidy_combined_g, graph_mean_dist()) 
+## [1] 2.437579 ## [1] 2.35444
+with_graph(tidy_sub_g, graph_mean_dist()) 
+## [1] 2.368    ## [1] 2.206925
+with_graph(tidy_int_g, graph_mean_dist()) 
+## [1] 1.626506 ## [1] 1.626506
 
 ## transitivity = probability for adjacent nodes to be interconnected
-transitivity(combined_graph) ## [1] 0.2091335
-transitivity(sub_graph) ## [1] 0.2496075
-transitivity(int_graph) ## [1] 0.2003515
+transitivity(combined_graph) ## [1] 0.2091335 ## [1] 0.2303226
+transitivity(sub_graph)      ## [1] 0.2496075 ## [1] 0.2773109
+transitivity(int_graph)      ## [1] 0.2003515 ## [1] 0.2003515
 
 ## summary of degree (number of connections per node)
 tidy_combined_g %>% ## combined network 
@@ -679,6 +718,8 @@ tidy_combined_g %>% ## combined network
             max = max(degree))
 # median mean_deg sd_deg   min   max
 #      7     10.9   11.7     1    72
+## from 13 July 2022
+#      7     9.56   9.77     1    50
 
 as_tibble(tidy_combined_g) %>% 
   qplot(x = degree, geom = "histogram", data = .) + 
@@ -694,6 +735,8 @@ tidy_sub_g %>% ## subtidal network
             max = max(degree))
 # median mean_deg sd_deg   min   max
 #      4     8.20   9.99     1    61
+## from 13 July 2022
+#      4     7.15   8.01     1    43
 
 as_tibble(tidy_sub_g) %>% 
   qplot(x = degree, geom = "histogram", data = .) + 
@@ -709,6 +752,8 @@ tidy_int_g %>% ## combined network
             max = max(degree))
 # median mean_deg sd_deg   min   max
 #      5     7.07   7.04     1    30
+## from 13 July 2022
+#      4     5.82   5.57     1    26
 
 as_tibble(tidy_int_g) %>% 
   qplot(x = degree, geom = "histogram", data = .) + 
@@ -723,8 +768,10 @@ tidy_combined_g %>% ## combined network
             sd_deg = sd(centralityE), 
             min = min(centralityE), 
             max = max(centralityE))
-#   median mean_deg sd_deg     min   max
-# 1  0.159    0.204  0.191 0.00210     1
+# median mean_deg sd_deg     min   max
+#  0.159    0.204  0.191 0.00210     1
+## from 13 July 2022
+#  0.179    0.250  0.227 0.00516     1
 
 as_tibble(tidy_combined_g) %>% 
   qplot(x = centralityE, geom = "histogram", data = .) + 
@@ -738,8 +785,10 @@ tidy_sub_g %>% ## subtidal network
             sd_deg = sd(centralityE), 
             min = min(centralityE), 
             max = max(centralityE))
-#   median mean_deg sd_deg     min   max
-# 1  0.130    0.215  0.221 0.00320     1
+# median mean_deg sd_deg     min   max
+#  0.130    0.215  0.221 0.00320     1
+## from 13 July 2022
+#  0.133    0.244  0.242 0.00559     1
 
 as_tibble(tidy_sub_g) %>% 
   qplot(x = centralityE, geom = "histogram", data = .) + 
@@ -753,8 +802,10 @@ tidy_int_g %>% ## combined network
             sd_deg = sd(centralityE), 
             min = min(centralityE), 
             max = max(centralityE))
-#   median mean_deg sd_deg     min   max
-# 1  0.241    0.302  0.249 0.00921     1
+# median mean_deg sd_deg     min   max
+#  0.241    0.302  0.249 0.00921     1
+## from 13 July 2022
+#  0.223    0.282  0.227 0.00971     1
 
 as_tibble(tidy_int_g) %>% 
   qplot(x = centralityE, geom = "histogram", data = .) + 
@@ -778,7 +829,7 @@ interactions_span <- interactions_comb2 %>%
            targetTaxon_zone %in% c("Intertidal") | 
            sourceTaxon_zone %in% c("Intertidal") & 
            targetTaxon_zone %in% c("Subtidal"))
-nrow(interactions_span) ## [1] 134
+nrow(interactions_span) ## [1] 134 ## [1] 128
 ## this aligns with calculation above
 
 ## create a graph combing subtidal and intertidal communities
@@ -828,9 +879,9 @@ tidy_span_g %>%
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
   ggraph(layout = "kk") + 
-  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey50", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) +  
+  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   scale_fill_manual(values = net_pal[c(1,3)], name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -918,7 +969,9 @@ interactions_both <- interactions_comb2 %>%
   ## interactions involving at least one species found in both zones
   filter(sourceTaxon_zone %in% c("Both") |
            targetTaxon_zone %in% c("Both"))
-nrow(interactions_both) ## [1] 235 ## [1] 36
+nrow(interactions_both) 
+## [1] 235 = both ## [1] 36 = both_only
+## [1] 199 = both ## [1] 30 = both_only <--- as of 13 July 2022
 
 ## COMMENT:
 ## use the & "AND" script version of the subsetting code above to 
@@ -974,9 +1027,9 @@ tidy_both_g %>%
   # ggraph(layout = "grid") + 
   # ggraph(layout = "star") + 
   ggraph(layout = "kk") + 
-  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   geom_edge_link(aes(linetype = interactionTypeName), 
-                 colour = "grey50", alpha = 0.5, width = 0.5) + 
+                 colour = "grey50", alpha = 0.5, width = 0.5) +  
+  geom_node_point(aes(fill = zone, size = weight), shape = 21) +
   scale_fill_manual(values = net_pal, name = "Zone") + 
   # scale_fill_brewer(palette = "Dark2", name = "Zone") + 
   # geom_node_text(aes(label = name), colour = 'white', vjust = 0.4) +
@@ -1061,23 +1114,41 @@ as_tibble(tidy_combined_g) %>%
   # ggplot() + 
   # geom_point(aes(x = x, y = centralityB))
 ## COMMENT: 7 species with centrality > 0.50
-#  name                              zone       centralityE
+#   name                              zone       centralityE
 # 1 Strongylocentrotus droebachiensis Both             1    
 # 2 Cancer irroratus                  Subtidal         0.783
 # 3 Homarus americanus                Subtidal         0.765
 # 4 Carcinus maenas                   Both             0.635
 # 5 Mytilus edulis                    Both             0.572
 
+## from 13 July 2022
+## COMMENT: 13 species with centrality > 0.50
+#   name                              zone       centralityE
+# 1 Homarus americanus                Subtidal         1    
+# 2 Carcinus maenas                   Both             0.902
+# 3 Cancer irroratus                  Subtidal         0.901
+# 4 Strongylocentrotus droebachiensis Both             0.839
+# 5 Tautogolabrus adspersus           Subtidal         0.767
+
 as_tibble(tidy_combined_g) %>% 
   select(name, zone, degree) %>% 
   arrange(desc(degree))
 ## COMMENT: 17 species with degree > 20
-# name                              zone       degree
+#   name                              zone       degree
 # 1 Strongylocentrotus droebachiensis Both           72
 # 2 Carcinus maenas                   Both           43
 # 3 Homarus americanus                Subtidal       40
 # 4 Cancer irroratus                  Subtidal       39
 # 5 Littorina littorea                Intertidal     37
+
+## from 13 July 2022
+## COMMENT: 14 species with degree > 20
+#   name                              zone       degree
+# 1 Strongylocentrotus droebachiensis Both           50
+# 2 Carcinus maenas                   Both           41
+# 3 Homarus americanus                Subtidal       38
+# 4 Littorina littorea                Intertidal     34
+# 5 Cancer irroratus                  Subtidal       33
 
 ## subtidal
 as_tibble(tidy_sub_g) %>% 
@@ -1091,6 +1162,15 @@ as_tibble(tidy_sub_g) %>%
 # 4 Myoxocephalus                     Subtidal       0.674
 # 5 Mytilus edulis                    Both           0.643
 
+## from 13 July 202
+## COMMENT: 10 species with centrality > 0.50
+#   name                              zone     centralityE
+# 1 Homarus americanus                Subtidal      1     
+# 2 Cancer irroratus                  Subtidal      0.864 
+# 3 Strongylocentrotus droebachiensis Both          0.845 
+# 4 Carcinus maenas                   Both          0.759 
+# 5 Mytilus edulis                    Both          0.755 
+
 as_tibble(tidy_sub_g) %>% 
   select(name, zone, degree) %>% 
   arrange(desc(degree))
@@ -1101,6 +1181,15 @@ as_tibble(tidy_sub_g) %>%
 # 3 Homarus americanus                Subtidal     31
 # 4 Carcinus maenas                   Both         28
 # 5 Mytilus edulis                    Both         25
+
+## from 13 July 2022
+## COMMENT: 6 species with degree > 20
+#   name                              zone     degree
+# 1 Strongylocentrotus droebachiensis Both         43
+# 2 Homarus americanus                Subtidal     29
+# 3 Carcinus maenas                   Both         27
+# 4 Cancer irroratus                  Subtidal     25
+# 5 Mytilus edulis                    Both         22
 
 ## intertidal
 as_tibble(tidy_int_g) %>% 
@@ -1114,6 +1203,15 @@ as_tibble(tidy_int_g) %>%
 # 4 Strongylocentrotus droebachiensis Both             0.751
 # 5 Ascophyllum nodosum               Both             0.563
 
+## from 13 July 2022
+## COMMENT: 6 species with centrality > 0.50
+#   name                              zone       centralityE
+# 1 Carcinus maenas                   Both             1    
+# 2 Nucella lapillus                  Intertidal       0.776
+# 3 Littorina littorea                Intertidal       0.724
+# 4 Hemigrapsus sanguineus            Intertidal       0.616
+# 5 Colpomenia peregrina              Both             0.614
+
 as_tibble(tidy_int_g) %>% 
   select(name, zone, degree) %>% 
   arrange(desc(degree))
@@ -1123,6 +1221,15 @@ as_tibble(tidy_int_g) %>%
 # 2 Strongylocentrotus droebachiensis Both           25
 # 3 Littorina littorea                Intertidal     23
 # 4 Nucella lapillus                  Intertidal     23
+# 5 Hemigrapsus sanguineus            Intertidal     16
+
+## from 13 July 2022
+## COMMENT: 1 species with degree > 20
+#   name                              zone       degree
+# 1 Carcinus maenas                   Both           26
+# 2 Littorina littorea                Intertidal     17
+# 3 Nucella lapillus                  Intertidal     17
+# 4 Strongylocentrotus droebachiensis Both           17
 # 5 Hemigrapsus sanguineus            Intertidal     16
 
 ## span
@@ -1135,23 +1242,41 @@ as_tibble(tidy_span_g) %>%
   select(name, zone, centralityE) %>% 
   arrange(desc(centralityE))
 ## COMMENT: 11 species with centrality > 0.50
-#  name                   zone       centralityE
+#   name                   zone       centralityE
 # 1 Lacuna vincta          Intertidal       1    
 # 2 Littorina littorea     Intertidal       0.888
 # 3 Saccharina latissima   Subtidal         0.871
 # 4 Littorina obtusata     Intertidal       0.810
 # 5 Ulvaria                Subtidal         0.679
 
+## from 13 July 2022
+## COMMENT: 12 species with centrality > 0.50
+#   name                   zone       centralityE
+# 1 Littorina littorea     Intertidal     1      
+# 2 Lacuna vincta          Intertidal     0.729  
+# 3 Tectura testinalis     Intertidal     0.718  
+# 4 Ulvaria                Subtidal       0.712  
+# 5 Littorina obtusata     Intertidal     0.614  
+
 as_tibble(tidy_span_g) %>% 
   select(name, zone, degree) %>% 
   arrange(desc(degree))
 ## COMMENT: 8 species with degree > 10 
-#  name                   zone       degree
+#   name                   zone       degree
 # 1 Lacuna vincta          Intertidal     19
 # 2 Littorina littorea     Intertidal     14
 # 3 Semibalanus balanoides Intertidal     13
 # 4 Littorina saxatilis    Intertidal     12
 # 5 Isopods                Intertidal     12
+
+## from 13 July 2022
+## COMMENT: 6 species with degree > 10
+#   name                   zone       degree
+# 1 Littorina littorea     Intertidal     17
+# 2 Lacuna vincta          Intertidal     14
+# 3 Littorina saxatilis    Intertidal     12
+# 4 Semibalanus balanoides Intertidal     11
+# 5 Idotea balthica        Intertidal     10
 
 ## both
 tidy_both_g <- tidy_both_g %>%
@@ -1170,6 +1295,15 @@ as_tibble(tidy_both_g) %>%
 # 4 Homarus americanus                Subtidal         0.386
 # 5 Ulvaria                           Subtidal         0.278
 
+## from 13 July 2022
+## COMMENT: 2 species with centrality > 0.50
+#   name                              zone       centralityE
+# 1 Carcinus maenas                   Both            1    
+# 2 Strongylocentrotus droebachiensis Both            0.959
+# 3 Mytilus edulis                    Both            0.709
+# 4 Homarus americanus                Subtidal        0.457
+# 5 Amphipoda                         Both            0.404
+
 as_tibble(tidy_both_g) %>% 
   select(name, zone, degree) %>% 
   arrange(desc(degree))
@@ -1179,6 +1313,15 @@ as_tibble(tidy_both_g) %>%
 # 2 Carcinus maenas                   Both           43
 # 3 Mytilus edulis                    Both           28
 # 4 Amphipoda                         Both           18
+# 5 Testudinalia testudinalis         Both           15
+
+## from 13 July 2022
+## COMMENT: 3 species with degree > 20
+#   name                              zone       degree
+# 1 Strongylocentrotus droebachiensis Both           50
+# 2 Carcinus maenas                   Both           41
+# 3 Mytilus edulis                    Both           24
+# 4 Amphipoda                         Both           16
 # 5 Testudinalia testudinalis         Both           15
 
 
@@ -1196,7 +1339,7 @@ tidy_combined_g %>%
   to_undirected() %>%
   mutate(modularity = graph_modularity(group=as.factor(zone))) %>%
   pull(modularity) %>%
-  head(1) ## [1] 0.03039753
+  head(1) ## [1] 0.03039753 ## [1] 0.01830991
 
 tidy_combined_g2 <- tidy_combined_g %>% 
   to_undirected() %>% 
@@ -1205,7 +1348,7 @@ tidy_combined_g2 <- tidy_combined_g %>%
 tidy_combined_g2 %>% 
   mutate(modularity = graph_modularity(group=as.factor(group))) %>% 
   pull(modularity) %>% 
-  head(1) ## [1] 0.2974819
+  head(1) ## [1] 0.2974819 ## [1] 0.2478921
 
 
 ## plot modularity figures
@@ -1279,7 +1422,8 @@ tidy_combined_g2 %>%
         plot.background = element_blank(), 
         panel.background = element_blank())
 
-ggsave(filename = "Plots/modularity_imposed_habitats.png", plot = last_plot(), 
+ggsave(filename = "Plots/modularity_imposed_habitats.png", 
+       plot = last_plot(), 
        width = 8, height = 8, units = "in", dpi = "retina")
 
 ## modularity by eigenvector grouping
@@ -1331,15 +1475,15 @@ tidy_combined_g2 %>%
                                   "Both", "Intertidal"))) %>% 
   ggplot(data = ., 
          mapping = aes(x = group)) + 
-  annotate("rect", xmin=-Inf, xmax=1.5, ymin=-Inf, ymax=Inf, 
+  annotate("rect", xmin = -Inf, xmax = 1.5, ymin = -Inf, ymax = Inf, 
            fill = "#F8766D", alpha = 0.4) +
   annotate("rect", xmin = 1.5, xmax = 2.5, ymin = -Inf, ymax = Inf, 
            fill = "#7CAE00", alpha = 0.4) +
-  annotate("rect", xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, 
+  annotate("rect", xmin = 2.5, xmax = Inf, ymin = -Inf, ymax = Inf, 
            fill = "#00BFC4", alpha = 0.4) + 
-  annotate("rect", xmin = 3.5, xmax = Inf, ymin = -Inf, ymax = Inf, 
-           fill = "#C77CFF", alpha = 0.4) + 
-  scale_y_continuous(limits = c(0, 40), expand = c(0, 0)) + 
+  # annotate("rect", xmin = 3.5, xmax = Inf, ymin = -Inf, ymax = Inf,
+  #          fill = "#C77CFF", alpha = 0.4) +
+  scale_y_continuous(limits = c(0, 60), expand = c(0, 0)) + 
   new_scale_fill() + 
   geom_bar(mapping = aes(fill = zone), colour = "black") + 
   scale_fill_manual(values = net_pal, name = "Zone") + 
