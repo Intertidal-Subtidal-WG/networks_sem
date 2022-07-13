@@ -5,6 +5,32 @@
 ## This script imports files that are created by the 
 ## script "networks_for_BEM_data_import.R"
 
+
+# Network analysis of nearshore communities at Appledore ------------------
+
+## Goals
+
+## (1) Generate a foodweb based on trophic interactions among the set of 
+## species observed in the subtidal and intertidal surveys around 
+## Appledore Island between 2014-2019
+
+## (2) After building a single foodweb for the entire island, we want to 
+## construct separate webs for different site-years to explore how foodweb
+## structure varies over time and space
+
+## (3) Compare network changes in network structure, modularity, and other 
+## metrics when intertidal and subtidal communities are treated as either
+## two separate networks or a single web
+
+## (4) Identify key species linking the subtidal and intertidal communties
+## (with the potential to run small simulations to look at what happens to 
+## the network when these species are removed)
+
+## (5) Explore/summarize the types of trophic motifs that link zones
+
+
+# set-up ------------------------------------------------------------------
+
 ## set a random seed for plotting
 set.seed(4444)
 
